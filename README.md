@@ -6,42 +6,46 @@ phone, in the browser's local storage.
 
 ## Get it onto your phone's home screen
 
+The app is hosted as a plain web page via GitHub Pages, at:
+
+**`https://kflan2003-alt.github.io/Kieron/`**
+
+Visit that link in your phone's browser and add it to your home screen from
+there. (A loose `.html` file can't be opened by Safari directly from the
+Files app — there's no "open in Safari" handler for local files on iOS —
+which is why this needs a real web address rather than a downloaded file.)
+
 ### iOS (Safari)
 
-1. Get `index.html` onto your phone. Easiest ways:
-   - Email it to yourself and open the attachment in Safari, or
-   - AirDrop it from a Mac, or
-   - Put it in iCloud Drive / Files and open it from there.
-2. Open the file in **Safari** (it must be Safari, not Chrome, for this to work on iOS).
-3. Tap the **Share** icon (the square with an arrow pointing up).
-4. Tap **Add to Home Screen**.
-5. Confirm the name and tap **Add**.
+1. Open **Safari** (it must be Safari, not Chrome, for this to work on iOS)
+   and go to `https://kflan2003-alt.github.io/Kieron/`.
+2. Tap the **Share** icon (the square with an arrow pointing up).
+3. Tap **Add to Home Screen**.
+4. Confirm the name and tap **Add**.
 
 The app icon now appears on your home screen and opens full-screen, without
 Safari's address bar.
 
 ### Android (Chrome)
 
-1. Get `index.html` onto your phone (email attachment, USB transfer, cloud
-   storage app — whatever's easiest).
-2. Open it with **Chrome** using a file manager app, or by opening the file
-   link directly.
-3. Tap the **⋮** menu (top right).
-4. Tap **Add to Home screen**.
-5. Confirm and tap **Add**.
+1. Open **Chrome** and go to `https://kflan2003-alt.github.io/Kieron/`.
+2. Tap the **⋮** menu (top right).
+3. Tap **Add to Home screen**.
+4. Confirm and tap **Add**.
 
-Note: because this is a plain HTML file with no server behind it, opening it
-via `file://` on Android sometimes opens in a browser tab rather than a
-standalone window — the shortcut still works and the app still runs fully
-offline either way.
+After that first visit, the page is cached on your phone and the app keeps
+working with no network connection — nothing in it calls out anywhere.
 
 ## Using it
 
-- First time you open it, a short setup wizard asks for the numbers marked
-  `TODO` in the brief (council tax, utilities, phone, food, transport,
-  subscriptions, both cards, the trip) one question at a time. You can bail
-  out at any point with **Finish later** — everything works with just one
-  debt entered, and you can fill in the rest later from **More → Your data**.
+- First time you open it, a short setup wizard asks for your numbers one
+  question at a time — income, rent, council tax, utilities, phone, food,
+  transport, subscriptions, any money owed to a friend, both cards, and
+  anything you're saving up for. You can bail out at any point with
+  **Finish later** — everything works with just one debt entered, and you
+  can fill in the rest later from **More → Your data**. Nothing you type
+  ever leaves your phone; it's saved to local storage only, never to the
+  repo this app is hosted from.
 - **Rhythm** is the home screen: your next six months, lean months and the
   quarterly lump month sitting side by side so the contrast is obvious at a
   glance. Tap a month to see the breakdown.

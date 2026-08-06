@@ -326,11 +326,11 @@ function defaultState(){
     strategy:'avalanche',
     customOrder:[],
     income:[
-      {id:uid(),name:'Retail job',amount:1000,frequency:'monthly'},
-      {id:uid(),name:'Student finance',amount:1400,frequency:'quarterly',startDate:'2026-09-15'}
+      {id:uid(),name:'Main job',amount:0,frequency:'monthly'},
+      {id:uid(),name:'Student finance',amount:0,frequency:'quarterly',startDate:'2026-09-15'}
     ],
     outgoings:[
-      {id:uid(),name:'Rent',amount:530,todo:false},
+      {id:uid(),name:'Rent',amount:0,todo:true},
       {id:uid(),name:'Council tax',amount:0,todo:true},
       {id:uid(),name:'Utilities / broadband',amount:0,todo:true},
       {id:uid(),name:'Phone contract',amount:0,todo:true},
@@ -339,13 +339,13 @@ function defaultState(){
       {id:uid(),name:'Subscriptions',amount:0,todo:true}
     ],
     debts:[
-      {id:uid(),name:'Toni (friend)',balance:1100,apr:0,minPayment:0,type:'personal',pinnedPosition:null},
+      {id:uid(),name:'Personal loan (friend)',balance:0,apr:0,minPayment:0,type:'personal',pinnedPosition:null},
       {id:uid(),name:'Credit card 1',balance:0,apr:0,minPayment:0,type:'revolving',pinnedPosition:null},
       {id:uid(),name:'Credit card 2',balance:0,apr:0,minPayment:0,type:'revolving',pinnedPosition:null}
     ],
     goals:[
-      {id:uid(),name:'New phone',cost:650,when:'Whenever sensible'},
-      {id:uid(),name:'Trip with girlfriend',cost:0,when:''}
+      {id:uid(),name:'New phone',cost:0,when:'Whenever sensible'},
+      {id:uid(),name:'Trip',cost:0,when:''}
     ],
     checkins:[]
   };
@@ -354,25 +354,32 @@ function defaultState(){
 /* Setup wizard step definitions: one field at a time.
    path: [collection, id, field] or a custom getter/setter. */
 function wizardSteps(state){
-  const cc1=state.debts[1], cc2=state.debts[2];
-  const trip=state.goals[1];
+  const mainJob=state.income[0], studentFinance=state.income[1];
+  const personalLoan=state.debts[0], cc1=state.debts[1], cc2=state.debts[2];
+  const phoneGoal=state.goals[0], trip=state.goals[1];
   const get=(coll,id,field)=>state[coll].find(x=>x.id===id)[field];
   const set=(coll,id,field)=>(v)=>{state[coll].find(x=>x.id===id)[field]=v;};
   const steps=[
+    {q:'What’s your main job’s income, per month?',sub:'An average is fine if it varies.',type:'number',prefix:'£',get:()=>mainJob.amount,set:(v)=>mainJob.amount=v},
+    {q:'Any regular lump-sum income — student finance, a bonus, anything less than monthly?',sub:'Enter 0 if none. You can set up the exact schedule afterwards in More → Your data.',type:'number',prefix:'£',get:()=>studentFinance.amount,set:(v)=>studentFinance.amount=v},
+    {q:'What’s your rent (or mortgage), per month?',type:'number',prefix:'£',get:()=>get('outgoings',state.outgoings[0].id,'amount'),set:set('outgoings',state.outgoings[0].id,'amount')},
     {q:'What do you pay in council tax each month?',sub:'If you’re a full-time student you may be exempt — enter 0 if so.',type:'number',prefix:'£',get:()=>get('outgoings',state.outgoings[1].id,'amount'),set:set('outgoings',state.outgoings[1].id,'amount')},
     {q:'Utilities and broadband, per month?',type:'number',prefix:'£',get:()=>get('outgoings',state.outgoings[2].id,'amount'),set:set('outgoings',state.outgoings[2].id,'amount')},
     {q:'Phone contract, per month?',type:'number',prefix:'£',get:()=>get('outgoings',state.outgoings[3].id,'amount'),set:set('outgoings',state.outgoings[3].id,'amount')},
     {q:'Roughly what do you spend on food each month?',type:'number',prefix:'£',get:()=>get('outgoings',state.outgoings[4].id,'amount'),set:set('outgoings',state.outgoings[4].id,'amount')},
     {q:'Transport or car costs, per month?',type:'number',prefix:'£',get:()=>get('outgoings',state.outgoings[5].id,'amount'),set:set('outgoings',state.outgoings[5].id,'amount')},
     {q:'Subscriptions — total per month?',sub:'Streaming, apps, gym, anything recurring.',type:'number',prefix:'£',get:()=>get('outgoings',state.outgoings[6].id,'amount'),set:set('outgoings',state.outgoings[6].id,'amount')},
-    {q:'Credit card 1 — current balance?',type:'number',prefix:'£',get:()=>cc1.balance,set:(v)=>cc1.balance=v},
+    {q:'Do you owe money to a friend or family member?',sub:'Enter a name, or leave it as is and skip the next question if not.',type:'text',get:()=>personalLoan.name,set:(v)=>personalLoan.name=v||personalLoan.name},
+    {q:'How much do you owe them?',sub:'Enter 0 if this doesn’t apply to you.',type:'number',prefix:'£',get:()=>personalLoan.balance,set:(v)=>personalLoan.balance=v},
+    {q:'Credit card 1 — current balance?',sub:'Enter 0 if you don’t have a second card to track.',type:'number',prefix:'£',get:()=>cc1.balance,set:(v)=>cc1.balance=v},
     {q:'Credit card 1 — APR?',sub:'The interest rate on your statement, as a percentage.',type:'number',prefix:'%',get:()=>cc1.apr,set:(v)=>cc1.apr=v},
     {q:'Credit card 1 — minimum monthly payment?',type:'number',prefix:'£',get:()=>cc1.minPayment,set:(v)=>cc1.minPayment=v},
-    {q:'Credit card 2 — current balance?',type:'number',prefix:'£',get:()=>cc2.balance,set:(v)=>cc2.balance=v},
+    {q:'Credit card 2 — current balance?',sub:'Enter 0 if this doesn’t apply to you.',type:'number',prefix:'£',get:()=>cc2.balance,set:(v)=>cc2.balance=v},
     {q:'Credit card 2 — APR?',type:'number',prefix:'%',get:()=>cc2.apr,set:(v)=>cc2.apr=v},
     {q:'Credit card 2 — minimum monthly payment?',type:'number',prefix:'£',get:()=>cc2.minPayment,set:(v)=>cc2.minPayment=v},
-    {q:'What would the trip with your girlfriend cost?',type:'number',prefix:'£',get:()=>trip.cost,set:(v)=>trip.cost=v},
-    {q:'Roughly when?',sub:'A month, a season, whatever you’ve got — this is just a note.',type:'text',get:()=>trip.when,set:(v)=>trip.when=v}
+    {q:'Anything you’re saving up for — a phone, a laptop, anything like that?',sub:'What would it cost? Enter 0 to skip.',type:'number',prefix:'£',get:()=>phoneGoal.cost,set:(v)=>phoneGoal.cost=v},
+    {q:'Anything else — a trip, an event?',sub:'What would it cost? Enter 0 to skip.',type:'number',prefix:'£',get:()=>trip.cost,set:(v)=>trip.cost=v},
+    {q:'Roughly when?',sub:'A month, a season, whatever you’ve got — this is just a note. Leave blank to skip.',type:'text',get:()=>trip.when,set:(v)=>trip.when=v}
   ];
   return steps;
 }
@@ -653,6 +660,10 @@ function runSelfTests(){
   // Test 1: income £1000/mo, rent £530, no other outgoings, no debts.
   {
     const s=defaultState();
+    s.income=[
+      {id:uid(),name:'Main job',amount:1000,frequency:'monthly'},
+      {id:uid(),name:'Student finance',amount:1400,frequency:'quarterly',startDate:'2026-09-15'}
+    ];
     s.outgoings=[{id:uid(),name:'Rent',amount:530,todo:false}];
     s.debts=[];
     const leanIdx=dateStrToMonthIndex('2026-10-01');
@@ -672,18 +683,22 @@ function runSelfTests(){
   // Test 3: 0% debt sorts last in avalanche; pinning to first changes order + produces non-zero extra interest.
   {
     const s=defaultState();
+    s.income=[
+      {id:uid(),name:'Main job',amount:1000,frequency:'monthly'},
+      {id:uid(),name:'Student finance',amount:1400,frequency:'quarterly',startDate:'2026-09-15'}
+    ];
     s.outgoings=[{id:uid(),name:'Rent',amount:530,todo:false}];
     s.debts=[
-      {id:'toni',name:'Toni',balance:1100,apr:0,minPayment:0,type:'personal',pinnedPosition:null},
+      {id:'friend',name:'Friend',balance:1100,apr:0,minPayment:0,type:'personal',pinnedPosition:null},
       {id:'cc1',name:'CC1',balance:1500,apr:24,minPayment:40,type:'revolving',pinnedPosition:null},
       {id:'cc2',name:'CC2',balance:1200,apr:29,minPayment:35,type:'revolving',pinnedPosition:null}
     ];
     const order=buildOrder(s.debts,'avalanche',[],true);
-    assert('0% APR debt sorts last in avalanche',order[order.length-1].id==='toni','order: '+order.map(d=>d.id).join(','));
+    assert('0% APR debt sorts last in avalanche',order[order.length-1].id==='friend','order: '+order.map(d=>d.id).join(','));
 
-    const pinned=s.debts.map(d=>d.id==='toni'?Object.assign({},d,{pinnedPosition:1}):Object.assign({},d));
+    const pinned=s.debts.map(d=>d.id==='friend'?Object.assign({},d,{pinnedPosition:1}):Object.assign({},d));
     const orderPinned=buildOrder(pinned,'avalanche',[],true);
-    assert('Pinning Toni to 1st changes the order',orderPinned[0].id==='toni','order: '+orderPinned.map(d=>d.id).join(','));
+    assert('Pinning the friend loan to 1st changes the order',orderPinned[0].id==='friend','order: '+orderPinned.map(d=>d.id).join(','));
 
     const base=simulatePayoff(s,'avalanche',{customOrderIds:[]});
     const withPin=simulatePayoff(Object.assign({},s,{debts:pinned}),'avalanche',{customOrderIds:[]});
