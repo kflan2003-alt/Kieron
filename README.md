@@ -4,6 +4,11 @@ A single-file, offline personal debt and cashflow tracker. Everything lives in
 `index.html` — no server, no accounts, no analytics. Your data stays on your
 phone, in the browser's local storage.
 
+> Also in this repo: [`nomeli/`](nomeli/) — a UI-only click-through prototype
+> of the Nomeli kitchen-companion app design, at
+> `https://kflan2003-alt.github.io/Kieron/nomeli/`. Unrelated to the app
+> below.
+
 ## Get it onto your phone's home screen
 
 The app is hosted as a plain web page via GitHub Pages, at:

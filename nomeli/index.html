@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<!--
+  UI-only click-through prototype. No camera, no AI, no backend — every
+  "smart" moment (scan result, recipe ideas) is mock data, wired up just
+  enough that the flow feels real. Palette/type approximate the Nomeli
+  design system: warm cream, forest/sage green, peach accent; Playfair
+  Display for headings, Inter for body (falls back to system fonts offline).
+-->
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Nomeli">
+<meta name="theme-color" content="#33604A">
+<meta name="description" content="Nomeli — AI kitchen companion. UI prototype, no backend.">
+<title>Nomeli — Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --cream:#FBF3E7;
+  --card:#FFFFFF;
+  --forest:#33604A;
+  --forest-dark:#264A39;
+  --sage:#7EBA5E;
+  --sage-soft:#E3F1DC;
+  --peach:#FF9F52;
+  --peach-soft:#FFE7D1;
+  --butter-soft:#FAF6DC;
+  --ink:#2B2A26;
+  --ink-dim:#726F65;
+  --ink-faint:#AFAB9E;
+  --line:#EFE4D2;
+  --danger:#C6512E;
+  --danger-soft:#FBDDCF;
+  --shadow:0 10px 28px rgba(43,42,38,.09);
+  --shadow-sm:0 4px 14px rgba(43,42,38,.07);
+  --r-lg:24px;
+  --r-md:16px;
+  --r-sm:12px;
+  --r-pill:999px;
+  --font-head:'Playfair Display',Georgia,'Times New Roman',serif;
+  --font-body:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:#EAE1D0;
+  color:var(--ink);
+  font-family:var(--font-body);
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,p,ul,ol{margin:0;}
+ul,ol{padding:0;list-style:none;}
+button,input{font-family:inherit;color:inherit;}
+button{-webkit-tap-highlight-color:transparent;border:none;background:none;cursor:pointer;}
+a{color:inherit;}
+
+#app{
+  max-width:480px;
+  margin:0 auto;
+  min-height:100vh;
+  min-height:100dvh;
+  background:var(--cream);
+  position:relative;
+}
+@media (min-width:560px){
+  body{padding:24px 0;}
+  #app{border-radius:38px;overflow:hidden;box-shadow:0 30px 70px rgba(0,0,0,.18);min-height:844px;}
+}
+
+.screen{display:none;padding-bottom:110px;}
+.screen.active{display:block;}
+.screen.no-nav{padding-bottom:24px;}
+
+.pad{padding:16px 20px 8px;}
+.h1{font-family:var(--font-head);font-weight:700;font-size:26px;line-height:1.2;color:var(--ink);}
+.h1.on-hero{color:#fff;}
+.h2{font-family:var(--font-head);font-weight:700;font-size:18px;margin:20px 0 10px;}
+.h2.warn{color:var(--danger);}
+.sub{color:var(--ink-dim);font-size:14px;margin-top:4px;}
+.eyebrow{color:var(--ink-dim);font-size:14px;margin:0 0 2px;}
+.section-lead{color:var(--ink-dim);font-size:14px;margin-bottom:16px;}
+.optional{color:var(--ink-faint);font-weight:400;}
+
+/* ---------- topbar ---------- */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:18px 16px 4px;}
+.topbar .h1{font-size:20px;}
+.icon-btn{width:40px;height:40px;border-radius:var(--r-pill);display:flex;align-items:center;justify-content:center;background:var(--card);box-shadow:var(--shadow-sm);color:var(--ink);position:relative;flex:0 0 auto;}
+.icon-btn.ghost{background:rgba(255,255,255,.22);color:#fff;backdrop-filter:blur(6px);box-shadow:none;}
+.icon-btn .dot{position:absolute;top:8px;right:9px;width:8px;height:8px;border-radius:50%;background:var(--peach);border:2px solid var(--card);}
+
+/* ---------- buttons ---------- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-weight:600;font-size:15px;padding:15px 20px;border-radius:var(--r-pill);transition:transform .08s ease;}
+.btn:active{transform:scale(.97);}
+.btn.block{width:100%;}
+.btn.primary{background:var(--forest);color:#fff;}
+.btn.secondary{background:var(--sage-soft);color:var(--forest-dark);}
+.btn.text{background:none;color:var(--forest);padding:10px;font-weight:600;}
+.btn.text.danger{color:var(--danger);}
+.btn.small{padding:9px 14px;font-size:13px;}
+
+/* ---------- splash ---------- */
+.splash-wrap{padding:56px 32px 32px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:6px;}
+.logo{font-family:var(--font-head);font-style:italic;font-weight:700;font-size:38px;color:var(--forest);margin-bottom:2px;}
+.tagline{color:var(--ink-dim);font-size:14px;margin-bottom:24px;}
+.splash-mascot{margin:8px 0 20px;}
+.splash-copy{color:var(--ink-dim);font-size:15px;line-height:1.6;margin-bottom:36px;}
+.splash-wrap .btn{margin-top:auto;}
+
+/* ---------- forms ---------- */
+.field{margin-bottom:14px;}
+.field label{display:block;font-size:13px;font-weight:600;color:var(--ink-dim);margin-bottom:6px;}
+.field input{width:100%;padding:14px 16px;border-radius:var(--r-md);border:1.5px solid var(--line);background:var(--card);font-size:15px;outline:none;}
+.field input:focus{border-color:var(--sage);}
+.divider{display:flex;align-items:center;gap:10px;color:var(--ink-faint);font-size:13px;margin:22px 0;}
+.divider::before,.divider::after{content:"";flex:1;height:1px;background:var(--line);}
+.social-row{display:flex;gap:12px;margin-bottom:24px;}
+.social-btn{flex:1;padding:13px;border-radius:var(--r-md);background:var(--card);box-shadow:var(--shadow-sm);font-size:18px;text-align:center;}
+.foot-link{text-align:center;font-size:14px;color:var(--ink-dim);}
+.foot-link a{color:var(--forest);font-weight:600;text-decoration:none;}
+
+/* ---------- cards / promo ---------- */
+.card{background:var(--card);border-radius:var(--r-lg);box-shadow:var(--shadow-sm);padding:16px;}
+.promo-card{display:flex;align-items:center;gap:14px;width:100%;text-align:left;background:var(--card);border-radius:var(--r-lg);box-shadow:var(--shadow-sm);padding:16px;margin-bottom:12px;}
+.promo-icon{width:44px;height:44px;border-radius:var(--r-pill);display:flex;align-items:center;justify-content:center;font-size:20px;background:var(--peach-soft);flex:0 0 auto;}
+.promo-card.leafy .promo-icon{background:var(--sage-soft);}
+.promo-text{flex:1;display:flex;flex-direction:column;gap:2px;}
+.promo-text strong{font-size:15px;}
+.promo-text span{font-size:13px;color:var(--ink-dim);}
+
+.stat-row{display:flex;gap:10px;margin-bottom:8px;}
+.stat-tile{flex:1;background:var(--card);border-radius:var(--r-md);box-shadow:var(--shadow-sm);padding:14px 10px;text-align:center;}
+.stat-tile strong{display:block;font-family:var(--font-head);font-size:22px;color:var(--forest);}
+.stat-tile span{font-size:12px;color:var(--ink-dim);}
+
+/* ---------- search / segmented ---------- */
+.search-bar{display:flex;align-items:center;gap:10px;background:var(--card);border-radius:var(--r-pill);box-shadow:var(--shadow-sm);padding:12px 16px;margin-bottom:14px;color:var(--ink-faint);}
+.search-bar svg{flex:0 0 auto;}
+.search-bar input{border:none;outline:none;background:none;flex:1;font-size:14px;color:var(--ink);}
+.segmented{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:16px;}
+.segmented.small{margin-bottom:12px;}
+.seg-btn{flex:0 0 auto;padding:9px 15px;border-radius:var(--r-pill);background:var(--card);font-size:13px;font-weight:600;color:var(--ink-dim);box-shadow:var(--shadow-sm);white-space:nowrap;}
+.seg-btn.active{background:var(--forest);color:#fff;box-shadow:none;}
+
+/* ---------- list rows / tags ---------- */
+.section-head{display:flex;align-items:center;justify-content:space-between;margin:20px 0 10px;}
+.section-head .h2{margin:0;}
+.section-head a{font-size:13px;color:var(--forest);font-weight:600;text-decoration:none;}
+.list{display:flex;flex-direction:column;gap:8px;}
+.list-row{display:flex;align-items:center;gap:12px;background:var(--card);border-radius:var(--r-md);box-shadow:var(--shadow-sm);padding:12px 14px;}
+.row-thumb{width:40px;height:40px;border-radius:var(--r-sm);background:var(--sage-soft);display:flex;align-items:center;justify-content:center;font-size:19px;flex:0 0 auto;}
+.row-mid{flex:1;display:flex;flex-direction:column;gap:2px;min-width:0;}
+.row-mid strong{font-size:14px;}
+.row-mid span{font-size:12px;color:var(--ink-dim);}
+.tag{font-size:11px;font-weight:700;padding:5px 10px;border-radius:var(--r-pill);white-space:nowrap;}
+.tag.urgent{background:var(--danger-soft);color:var(--danger);}
+.tag.soon{background:var(--peach-soft);color:#B5651D;}
+.tag.fresh{background:var(--sage-soft);color:var(--forest-dark);}
+.empty{color:var(--ink-faint);font-size:13px;padding:8px 2px;}
+
+/* ---------- camera / scan ---------- */
+.camera-view{background:#151915;min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;color:#fff;}
+.camera-top{display:flex;align-items:center;justify-content:space-between;padding:18px 16px;}
+.camera-top p{font-size:14px;font-weight:600;}
+.camera-frame{flex:1;margin:0 24px;border-radius:var(--r-lg);border:2px dashed rgba(255,255,255,.35);display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;background:radial-gradient(circle at 50% 40%,#3a2620,#1c130f);}
+.mock-photo{font-size:70px;filter:drop-shadow(0 8px 18px rgba(0,0,0,.4));}
+.camera-hint{text-align:center;color:rgba(255,255,255,.7);font-size:13px;padding:16px 40px 4px;}
+.camera-controls{display:flex;align-items:center;justify-content:center;gap:36px;padding:22px 0 40px;}
+.ctrl{font-size:20px;opacity:.85;}
+.shutter{width:66px;height:66px;border-radius:50%;background:#fff;border:5px solid rgba(255,255,255,.35);}
+.scanning-overlay{position:fixed;inset:0;background:rgba(10,14,10,.82);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;color:#fff;opacity:0;pointer-events:none;transition:opacity .2s ease;z-index:50;}
+.scanning-overlay.show{opacity:1;pointer-events:auto;}
+.spinner{width:38px;height:38px;border-radius:50%;border:3px solid rgba(255,255,255,.25);border-top-color:var(--sage);animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* ---------- recognize ---------- */
+.center-top{text-align:center;}
+.result-card{display:flex;align-items:center;gap:14px;text-align:left;margin:18px 0 14px;}
+.result-thumb{width:52px;height:52px;border-radius:var(--r-md);background:var(--peach-soft);display:flex;align-items:center;justify-content:center;font-size:24px;}
+.result-info strong{display:block;font-size:16px;}
+.result-info span{font-size:13px;color:var(--ink-dim);}
+.detail-list{background:var(--card);border-radius:var(--r-lg);box-shadow:var(--shadow-sm);padding:4px 16px;margin-bottom:18px;text-align:left;}
+.detail-row{display:flex;justify-content:space-between;padding:12px 0;font-size:14px;border-bottom:1px solid var(--line);}
+.detail-row:last-child{border-bottom:none;}
+.detail-row span{color:var(--ink-dim);}
+
+/* ---------- hero (eat) ---------- */
+.hero{background:linear-gradient(160deg,var(--forest),var(--forest-dark));padding:18px 20px 26px;display:flex;flex-direction:column;align-items:flex-start;gap:10px;}
+.on-hero-sub{color:rgba(255,255,255,.8);font-size:13px;max-width:80%;}
+.mood-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;}
+.mood-btn{background:var(--card);border-radius:var(--r-md);box-shadow:var(--shadow-sm);padding:16px 10px;text-align:center;font-size:24px;display:flex;flex-direction:column;align-items:center;gap:8px;border:2px solid transparent;}
+.mood-btn span{font-size:12px;font-weight:600;color:var(--ink-dim);}
+.mood-btn.active{border-color:var(--sage);background:var(--sage-soft);}
+.pref-card{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--ink-dim);margin-bottom:20px;}
+.pref-card strong{color:var(--ink);font-size:13px;}
+
+/* ---------- recipe list / page ---------- */
+.recipe-list{display:flex;flex-direction:column;gap:10px;margin:16px 0 20px;}
+.recipe-card{display:flex;align-items:center;gap:12px;text-align:left;background:var(--card);border-radius:var(--r-lg);box-shadow:var(--shadow-sm);padding:12px;}
+.recipe-thumb{width:56px;height:56px;border-radius:var(--r-md);display:flex;align-items:center;justify-content:center;font-size:26px;flex:0 0 auto;background:var(--peach-soft);}
+.recipe-thumb.sage{background:var(--sage-soft);}
+.recipe-thumb.butter{background:var(--butter-soft);}
+.recipe-info{flex:1;display:flex;flex-direction:column;gap:6px;min-width:0;}
+.recipe-info strong{font-size:14px;line-height:1.3;}
+.recipe-sub{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink-dim);}
+
+.recipe-hero{height:220px;background:linear-gradient(160deg,var(--peach),#E9803A);display:flex;align-items:flex-start;justify-content:space-between;padding:18px 16px;position:relative;}
+.hero-emoji{position:absolute;bottom:14px;left:20px;font-size:64px;filter:drop-shadow(0 10px 18px rgba(0,0,0,.18));}
+.recipe-meta{display:flex;gap:8px;color:var(--ink-dim);font-size:13px;margin:6px 0 18px;}
+.chip-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px;}
+.chip{background:var(--sage-soft);color:var(--forest-dark);font-size:12px;font-weight:600;padding:7px 13px;border-radius:var(--r-pill);}
+.chip.muted{background:var(--line);color:var(--ink-dim);}
+.tabbar{display:flex;gap:24px;border-bottom:1.5px solid var(--line);margin-bottom:16px;}
+.tab-btn{padding:0 0 12px;font-size:14px;font-weight:600;color:var(--ink-faint);border-bottom:2px solid transparent;margin-bottom:-1.5px;}
+.tab-btn.active{color:var(--forest);border-color:var(--forest);}
+.ingredient-list li,.step-list li{padding:11px 0;border-bottom:1px solid var(--line);font-size:14px;line-height:1.5;}
+.step-list{counter-reset:step;}
+.step-list li{display:flex;gap:12px;}
+.step-list li::before{counter-increment:step;content:counter(step);flex:0 0 auto;width:24px;height:24px;border-radius:50%;background:var(--sage-soft);color:var(--forest-dark);font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;}
+.bottom-cta{position:fixed;left:50%;transform:translateX(-50%);bottom:0;width:100%;max-width:480px;background:linear-gradient(to top,var(--cream) 60%,transparent);padding:20px 20px 26px;}
+
+/* ---------- meal planner / shopping ---------- */
+.week-nav{display:flex;align-items:center;justify-content:space-between;background:var(--card);border-radius:var(--r-pill);box-shadow:var(--shadow-sm);padding:10px 18px;margin-bottom:16px;font-size:14px;}
+.week-nav button{font-size:18px;color:var(--ink-dim);padding:2px 6px;}
+.meal-days{display:flex;flex-direction:column;gap:10px;}
+.meal-day{display:flex;align-items:center;gap:14px;background:var(--card);border-radius:var(--r-md);box-shadow:var(--shadow-sm);padding:12px 14px;}
+.day-label{width:34px;font-size:12px;font-weight:700;color:var(--ink-faint);flex:0 0 auto;}
+.meal-card{display:flex;align-items:center;gap:10px;font-size:14px;font-weight:600;}
+.meal-emoji{font-size:20px;}
+.add-meal-btn{color:var(--forest);font-size:13px;font-weight:600;}
+.check-list{display:flex;flex-direction:column;gap:8px;margin-bottom:8px;}
+.check-row{display:flex;align-items:center;gap:12px;background:var(--card);border-radius:var(--r-md);box-shadow:var(--shadow-sm);padding:12px 14px;cursor:pointer;}
+.check-row input{position:absolute;opacity:0;width:0;height:0;}
+.check-box{width:20px;height:20px;border-radius:6px;border:2px solid var(--line);flex:0 0 auto;display:flex;align-items:center;justify-content:center;color:#fff;}
+.check-row input:checked + .check-box{background:var(--sage);border-color:var(--sage);}
+.check-row input:checked ~ .check-label{text-decoration:line-through;color:var(--ink-faint);}
+.check-label{flex:1;font-size:14px;}
+.check-qty{font-size:12px;color:var(--ink-dim);}
+
+/* ---------- profile ---------- */
+.profile-head{text-align:center;padding:12px 0 20px;}
+.avatar{width:76px;height:76px;border-radius:50%;background:var(--sage-soft);font-size:34px;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;}
+.menu-list{display:flex;flex-direction:column;gap:8px;margin-bottom:24px;}
+.menu-row{display:flex;align-items:center;justify-content:space-between;background:var(--card);border-radius:var(--r-md);box-shadow:var(--shadow-sm);padding:15px 16px;font-size:14px;font-weight:500;width:100%;text-align:left;color:var(--ink-dim);}
+
+/* ---------- bottom nav ---------- */
+.bottomnav{position:fixed;left:50%;bottom:0;transform:translateX(-50%);width:100%;max-width:480px;background:var(--card);box-shadow:0 -6px 20px rgba(43,42,38,.08);border-radius:26px 26px 0 0;display:flex;align-items:center;justify-content:space-around;padding:10px 6px calc(10px + env(safe-area-inset-bottom));z-index:20;}
+.nav-item{display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--ink-faint);font-size:10px;font-weight:600;padding:4px 8px;}
+.nav-item.active{color:var(--forest);}
+.nav-fab{width:52px;height:52px;border-radius:50%;background:var(--forest);color:#fff;display:flex;align-items:center;justify-content:center;margin-top:-30px;box-shadow:0 8px 18px rgba(51,96,74,.45);border:5px solid var(--cream);}
+.fab{position:fixed;left:50%;bottom:96px;transform:translate(146px,0);width:52px;height:52px;border-radius:50%;background:var(--forest);color:#fff;font-size:24px;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 18px rgba(51,96,74,.4);z-index:19;}
+
+/* ---------- toast ---------- */
+#toast{position:fixed;left:50%;bottom:110px;transform:translate(-50%,12px);max-width:88%;background:var(--ink);color:#fff;font-size:13px;font-weight:500;padding:12px 18px;border-radius:var(--r-pill);opacity:0;pointer-events:none;transition:all .25s ease;z-index:80;text-align:center;box-shadow:var(--shadow);}
+#toast.show{opacity:1;transform:translate(-50%,0);}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- SPLASH -->
+<section class="screen active no-nav" data-screen="splash">
+  <div class="splash-wrap">
+    <div class="logo">Nomeli</div>
+    <p class="tagline">Your AI kitchen companion</p>
+    <div class="splash-mascot" data-mascot="140"></div>
+    <p class="splash-copy">Scan your food. Track freshness.<br>Get smart recipe ideas. Waste less.</p>
+    <button class="btn primary block" data-goto="signup">Get Started</button>
+  </div>
+</section>
+
+<!-- SIGN UP -->
+<section class="screen no-nav" data-screen="signup">
+  <div class="topbar"><button class="icon-btn" data-back data-icon="back"></button><span></span><span></span></div>
+  <div class="pad">
+    <h1 class="h1">Welcome to Nomeli</h1>
+    <p class="sub" style="margin-bottom:22px;">Let's get to know you</p>
+    <div class="field"><label>Name</label><input type="text" placeholder="Your name"></div>
+    <div class="field"><label>Email</label><input type="email" placeholder="you@example.com"></div>
+    <div class="field"><label>Password</label><input type="password" placeholder="••••••••"></div>
+    <div class="field"><label>Dietary preferences <span class="optional">(optional)</span></label><input type="text" placeholder="e.g. Vegetarian"></div>
+    <button class="btn primary block" data-goto="home" style="margin-top:6px;">Create Account</button>
+    <div class="divider"><span>or continue with</span></div>
+    <div class="social-row">
+      <button class="social-btn" data-goto="home"></button>
+      <button class="social-btn" data-goto="home">G</button>
+      <button class="social-btn" data-goto="home">✉️</button>
+    </div>
+    <p class="foot-link">Already have an account? <a href="#" data-goto="home">Log in</a></p>
+  </div>
+</section>
+
+<!-- HOME -->
+<section class="screen" data-screen="home" data-tab="home">
+  <div class="topbar">
+    <div><p class="eyebrow">Good morning,</p><h1 class="h1">Charlotte</h1></div>
+    <button class="icon-btn" data-toast="Notifications — prototype only"><span data-icon="bell"></span><span class="dot"></span></button>
+  </div>
+  <div class="pad">
+    <p class="section-lead">Let's make the most of your food today.</p>
+    <button class="promo-card" data-goto="expiry">
+      <div class="promo-icon">⚠️</div>
+      <div class="promo-text"><strong>Expiring Soon</strong><span>5 items need your attention</span></div>
+      <span data-icon="chevronRight"></span>
+    </button>
+    <button class="promo-card leafy" data-goto="eat">
+      <div class="promo-icon" data-mascot="26"></div>
+      <div class="promo-text"><strong>What should I eat?</strong><span>Get AI recipe ideas based on what you have</span></div>
+      <span data-icon="chevronRight"></span>
+    </button>
+    <h2 class="h2">Kitchen Overview</h2>
+    <div class="stat-row">
+      <button class="stat-tile" data-goto="kitchen"><strong>32</strong><span>Items</span></button>
+      <button class="stat-tile" data-goto="expiry"><strong>12</strong><span>Expiring Soon</span></button>
+      <button class="stat-tile" data-goto="kitchen"><strong>12</strong><span>Low Stock</span></button>
+    </div>
+  </div>
+  <nav class="bottomnav" data-bottomnav></nav>
+</section>
+
+<!-- SCAN -->
+<section class="screen no-nav" data-screen="scan">
+  <div class="camera-view">
+    <div class="camera-top">
+      <button class="icon-btn ghost" data-back><span data-icon="back"></span></button>
+      <p>Scan Food</p>
+      <button class="icon-btn ghost" data-toast="Point your camera at any food item"><span data-icon="info"></span></button>
+    </div>
+    <div class="camera-frame"><div class="mock-photo">🍓</div></div>
+    <p class="camera-hint">We'll identify it and add it to your kitchen</p>
+    <div class="camera-controls">
+      <button class="ctrl" data-toast="Gallery — prototype only">🖼️</button>
+      <button class="shutter" id="shutterBtn"></button>
+      <button class="ctrl" data-toast="Flash — prototype only">⚡</button>
+    </div>
+  </div>
+  <div class="scanning-overlay" id="scanningOverlay"><div class="spinner"></div><p>Identifying…</p></div>
+</section>
+
+<!-- RECOGNIZE -->
+<section class="screen no-nav" data-screen="recognize">
+  <div class="pad center-top" style="padding-top:48px;">
+    <div data-mascot="84" style="margin:0 auto 14px;width:84px;"></div>
+    <h1 class="h1">I found this!</h1>
+    <p class="sub" style="margin-bottom:20px;">Looks like…</p>
+    <div class="card result-card">
+      <div class="result-thumb">🍓</div>
+      <div class="result-info"><strong>Strawberries</strong><span>125g</span></div>
+    </div>
+    <div class="detail-list">
+      <div class="detail-row"><span>Category</span><strong>Fruit</strong></div>
+      <div class="detail-row"><span>Storage</span><strong>Fridge</strong></div>
+      <div class="detail-row"><span>Best before</span><strong>16 Aug 2026</strong></div>
+    </div>
+    <button class="btn primary block" id="addToKitchenBtn">Add to Kitchen</button>
+    <button class="btn text block" data-toast="Editing details — prototype only">Edit details</button>
+  </div>
+</section>
+
+<!-- KITCHEN -->
+<section class="screen" data-screen="kitchen" data-tab="kitchen">
+  <div class="pad">
+    <h1 class="h1" style="margin-bottom:14px;">My Kitchen</h1>
+    <div class="search-bar"><span data-icon="search"></span><input type="text" id="kitchenSearch" placeholder="Search items"></div>
+    <div class="segmented" id="kitchenFilters">
+      <button class="seg-btn active" data-filter="All">All 32</button>
+      <button class="seg-btn" data-filter="Fridge">Fridge 18</button>
+      <button class="seg-btn" data-filter="Freezer">Freezer 6</button>
+      <button class="seg-btn" data-filter="Pantry">Pantry 8</button>
+    </div>
+    <div class="section-head"><h2 class="h2 warn">Expiring Soon</h2><a href="#" data-goto="expiry">See all</a></div>
+    <div id="kitchenExpiring" class="list"></div>
+    <div class="section-head"><h2 class="h2">Fresh Items</h2><a href="#" data-toast="Full list — prototype only">See all</a></div>
+    <div id="kitchenFresh" class="list"></div>
+  </div>
+  <nav class="bottomnav" data-bottomnav></nav>
+</section>
+
+<!-- EXPIRY -->
+<section class="screen" data-screen="expiry" data-tab="kitchen">
+  <div class="topbar"><button class="icon-btn" data-back><span data-icon="back"></span></button><h1 class="h1">Expiry Alerts</h1><span style="width:40px;"></span></div>
+  <div class="pad">
+    <div class="segmented" id="expiryFilters">
+      <button class="seg-btn active" data-filter="All">All</button>
+      <button class="seg-btn" data-filter="urgent">Urgent (2)</button>
+      <button class="seg-btn" data-filter="soon">Soon (3)</button>
+    </div>
+    <div id="expiryList" class="list"></div>
+  </div>
+  <nav class="bottomnav" data-bottomnav></nav>
+</section>
+
+<!-- EAT -->
+<section class="screen" data-screen="eat" data-tab="home">
+  <div class="hero">
+    <button class="icon-btn ghost" data-back><span data-icon="back"></span></button>
+    <div data-mascot="46"></div>
+    <h1 class="h1 on-hero">What should I eat?</h1>
+    <p class="on-hero-sub">Based on what you have and what you're in the mood for.</p>
+  </div>
+  <div class="pad">
+    <h2 class="h2" style="margin-top:6px;">I feel like…</h2>
+    <div class="mood-grid" id="moodGrid">
+      <button class="mood-btn" data-mood="comforting">🍲<span>Something Comforting</span></button>
+      <button class="mood-btn" data-mood="healthy">🥗<span>Something Healthy</span></button>
+      <button class="mood-btn" data-mood="quick">⏱️<span>Something Quick</span></button>
+      <button class="mood-btn" data-mood="surprise">🎲<span>Surprise Me</span></button>
+    </div>
+    <div class="card pref-card"><span>Dietary preferences</span><strong>No preferences</strong></div>
+    <button class="btn primary block" data-goto="ideas">Show Me Ideas ✨</button>
+  </div>
+  <nav class="bottomnav" data-bottomnav></nav>
+</section>
+
+<!-- IDEAS -->
+<section class="screen no-nav" data-screen="ideas">
+  <div class="topbar"><button class="icon-btn" data-back><span data-icon="back"></span></button><span></span><button class="icon-btn" data-toast="Saved to favourites"><span data-icon="heart"></span></button></div>
+  <div class="pad">
+    <h1 class="h1">Here are some ideas!</h1>
+    <p class="sub">Made for you by Nomeli</p>
+    <div id="ideasList" class="recipe-list"></div>
+    <button class="btn secondary block" id="surpriseAgainBtn">↻ Surprise Me Again</button>
+  </div>
+</section>
+
+<!-- RECIPE -->
+<section class="screen no-nav" data-screen="recipe">
+  <div class="recipe-hero" id="recipeHero"></div>
+  <div class="pad" style="padding-bottom:110px;">
+    <h1 class="h1" id="recipeName"></h1>
+    <div class="recipe-meta" id="recipeMeta"></div>
+    <h2 class="h2" style="margin-top:0;">You will use</h2>
+    <div class="chip-row" id="recipeUses"></div>
+    <div class="tabbar">
+      <button class="tab-btn active" data-tab="ingredients">Ingredients</button>
+      <button class="tab-btn" data-tab="steps">Steps</button>
+    </div>
+    <ul id="recipeIngredients" class="ingredient-list"></ul>
+    <ol id="recipeSteps" class="step-list" style="display:none"></ol>
+  </div>
+  <div class="bottom-cta"><button class="btn primary block" id="startCookingBtn">Start Cooking</button></div>
+</section>
+
+<!-- PLAN -->
+<section class="screen" data-screen="plan" data-tab="plan">
+  <div class="pad">
+    <h1 class="h1" style="margin-bottom:14px;">Plan</h1>
+    <div class="segmented" id="planTabs">
+      <button class="seg-btn active" data-plan="planner">Meal Planner</button>
+      <button class="seg-btn" data-plan="shopping">Shopping List</button>
+    </div>
+    <div id="plannerPanel">
+      <div class="week-nav">
+        <button data-toast="This prototype only shows the current week">‹</button>
+        <strong>30 Jun – 6 Jul</strong>
+        <button data-toast="This prototype only shows the current week">›</button>
+      </div>
+      <div id="mealDays" class="meal-days"></div>
+    </div>
+    <div id="shoppingPanel" style="display:none">
+      <div class="segmented small">
+        <button class="seg-btn active">List</button>
+        <button class="seg-btn" data-toast="Pantry staples — prototype only">Pantry Staples</button>
+      </div>
+      <h2 class="h2" style="margin-top:4px;">From Recipes</h2>
+      <div id="shopFromRecipes" class="check-list"></div>
+      <h2 class="h2">You may need</h2>
+      <div id="shopMayNeed" class="check-list"></div>
+    </div>
+  </div>
+  <button class="fab" id="planFab">+</button>
+  <nav class="bottomnav" data-bottomnav></nav>
+</section>
+
+<!-- PROFILE -->
+<section class="screen" data-screen="profile" data-tab="profile">
+  <div class="pad">
+    <div class="profile-head">
+      <div class="avatar">🙂</div>
+      <h1 class="h1">Charlotte</h1>
+      <p class="sub">Love good food, less waste</p>
+    </div>
+    <div class="menu-list" id="profileMenu"></div>
+    <button class="btn text danger block" id="logoutBtn">Log Out</button>
+  </div>
+  <nav class="bottomnav" data-bottomnav></nav>
+</section>
+
+</div>
+<div id="toast"></div>
+
+<script>
+/* ---------- icons ---------- */
+const ICONS = {
+  home:'<path d="M4 11.5 12 4l8 7.5"/><path d="M6 10v9a1 1 0 0 0 1 1h3v-6h4v6h3a1 1 0 0 0 1-1v-9"/>',
+  kitchen:'<path d="M4 9h16l-1.5 10.3a2 2 0 0 1-2 1.7H7.5a2 2 0 0 1-2-1.7L4 9Z"/><path d="M8 9V7a4 4 0 0 1 8 0v2"/>',
+  camera:'<path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1Z"/><circle cx="12" cy="13" r="3.3"/>',
+  calendar:'<rect x="3.5" y="5" width="17" height="16" rx="2.5"/><path d="M8 3v4M16 3v4M3.5 10h17"/>',
+  user:'<circle cx="12" cy="8.2" r="3.6"/><path d="M4.5 20c1-4 4-6 7.5-6s6.5 2 7.5 6"/>',
+  bell:'<path d="M6 10a6 6 0 0 1 12 0c0 4 1.5 5.5 1.5 5.5H4.5S6 14 6 10Z"/><path d="M10 18.5a2 2 0 0 0 4 0"/>',
+  back:'<path d="M15 5 8 12l7 7"/>',
+  search:'<circle cx="11" cy="11" r="6.5"/><path d="m20 20-3.6-3.6"/>',
+  heart:'<path d="M12 20.5s-7.5-4.6-9.8-9A5.3 5.3 0 0 1 12 6.2 5.3 5.3 0 0 1 21.8 11.5c-2.3 4.4-9.8 9-9.8 9Z"/>',
+  chevronRight:'<path d="m9 5 7 7-7 7"/>',
+  kebab:'<circle cx="12" cy="5.5" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="12" cy="18.5" r="1.2"/>',
+  info:'<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.01"/>'
+};
+function iconSVG(name,size=22){
+  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${ICONS[name]||''}</svg>`;
+}
+function mascotSVG(size=64){
+  return `<svg width="${size}" height="${size}" viewBox="0 0 64 64" fill="none">
+    <path d="M32 4c13 0 21 11 21 26S45.5 60 32 60 11 44 11 30 19 4 32 4Z" fill="#7EBA5E"/>
+    <ellipse cx="32" cy="35" rx="14" ry="17" fill="#E3F1DC"/>
+    <circle cx="26.5" cy="31.5" r="2.3" fill="#2B2A26"/>
+    <circle cx="37.5" cy="31.5" r="2.3" fill="#2B2A26"/>
+    <path d="M27 39c1.7 1.8 8.3 1.8 10 0" stroke="#2B2A26" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+    <path d="M29.5 5c0-3.2 2.2-5.3 5.5-5.5" stroke="#33604A" stroke-width="2.6" stroke-linecap="round" fill="none"/>
+  </svg>`;
+}
+function hydrateIcons(){
+  document.querySelectorAll('[data-icon]').forEach(el=>{ el.innerHTML = iconSVG(el.dataset.icon); });
+  document.querySelectorAll('[data-mascot]').forEach(el=>{ el.innerHTML = mascotSVG(+el.dataset.mascot); });
+}
+
+/* ---------- mock data ---------- */
+const EMOJI = {
+  'Greek Yogurt':'🥣','Chicken Breast':'🍗','Strawberries':'🍓','Basil':'🌿','Milk':'🥛',
+  'Broccoli':'🥦','Parmesan Cheese':'🧀','Penne Pasta':'🍝','Frozen Peas':'🫛','Olive Oil':'🫒','Garlic':'🧄'
+};
+const KITCHEN_ITEMS = [
+  {name:'Greek Yogurt', qty:'200g', loc:'Fridge', due:'Today', status:'urgent'},
+  {name:'Chicken Breast', qty:'500g', loc:'Fridge', due:'1 day', status:'urgent'},
+  {name:'Strawberries', qty:'125g', loc:'Fridge', due:'2 days', status:'soon'},
+  {name:'Basil', qty:'20g', loc:'Fridge', due:'3 days', status:'soon'},
+  {name:'Milk', qty:'1L', loc:'Fridge', due:'4 days', status:'soon'},
+  {name:'Broccoli', qty:'1 head', loc:'Fridge', due:'5 days', status:'fresh'},
+  {name:'Parmesan Cheese', qty:'150g', loc:'Fridge', due:'12 days', status:'fresh'},
+  {name:'Penne Pasta', qty:'400g', loc:'Pantry', due:'-', status:'fresh'},
+  {name:'Frozen Peas', qty:'600g', loc:'Freezer', due:'-', status:'fresh'},
+  {name:'Olive Oil', qty:'500ml', loc:'Pantry', due:'-', status:'fresh'}
+];
+const RECIPES = [
+  {id:'chicken-pasta', name:'Creamy Chicken & Broccoli Pasta', time:'25 min', difficulty:'Easy', servings:2,
+   tag:'Use soon', emoji:'🍝', color:'', uses:['Chicken Breast','Broccoli','Greek Yogurt'], moreCount:3,
+   ingredients:['250g penne pasta','1 chicken breast, diced','1 head broccoli, cut into florets','2 cloves garlic, minced','100g parmesan cheese, grated','100ml heavy cream','1 tbsp olive oil','Salt & pepper to taste'],
+   steps:['Bring a large pot of salted water to the boil and cook the penne until al dente.','Heat olive oil in a pan and cook the diced chicken until golden and cooked through.','Add garlic and broccoli, sauté for 3-4 minutes until bright green.','Stir in the cream and parmesan, simmer until the sauce thickens slightly.','Toss the drained pasta through the sauce, season to taste and serve warm.']},
+  {id:'yogurt-bowl', name:'Yogurt & Berry Breakfast Bowl', time:'10 min', difficulty:'Easy', servings:1,
+   tag:'Use today', emoji:'🍓', color:'sage', uses:['Greek Yogurt','Strawberries','Basil'], moreCount:0,
+   ingredients:['200g Greek yogurt','125g strawberries, sliced','1 tbsp honey','A few basil leaves, torn','Granola, to serve'],
+   steps:['Spoon the yogurt into a bowl.','Top with sliced strawberries and a drizzle of honey.','Scatter over torn basil and a handful of granola, then serve.']},
+  {id:'garlic-chicken', name:'Garlic Butter Chicken & Veg', time:'30 min', difficulty:'Easy', servings:2,
+   tag:'Use soon', emoji:'🥦', color:'butter', uses:['Chicken Breast','Broccoli','Milk'], moreCount:0,
+   ingredients:['2 chicken breasts','1 head broccoli, cut into florets','2 tbsp butter','3 cloves garlic, minced','Salt & pepper to taste'],
+   steps:['Season chicken and pan-fry in butter until golden and cooked through, about 6-7 min per side.','Remove chicken and rest. In the same pan, cook garlic and broccoli until tender.','Slice the chicken, return to the pan, toss together in the garlicky butter, then serve.']}
+];
+let MEAL_PLAN = [
+  {day:'Mon', meal:'Creamy Chicken Pasta', emoji:'🍝'},
+  {day:'Tue', meal:'Leftover Pasta', emoji:'🍝'},
+  {day:'Wed', meal:'Yogurt & Berry Bowl', emoji:'🍓'},
+  {day:'Thu', meal:'Garlic Chicken & Veg', emoji:'🥦'},
+  {day:'Fri', meal:null, emoji:null}
+];
+const SHOPPING = {
+  fromRecipes:[{name:'Penne Pasta', qty:'250g', checked:false},{name:'Parmesan Cheese', qty:'100g', checked:false},{name:'Heavy Cream', qty:'100ml', checked:false}],
+  youMayNeed:[{name:'Olive Oil', checked:false},{name:'Garlic', checked:false}]
+};
+const PROFILE_MENU = ['Dietary Preferences','Allergies','Notifications','Account Settings','Help & Support','About Nomeli'];
+
+/* ---------- nav / routing ---------- */
+const ROOTS = ['home','kitchen','plan','profile'];
+const TAB_FOR_SCREEN = {home:'home',kitchen:'kitchen',expiry:'kitchen',eat:'home',ideas:'home',recipe:'home',plan:'plan',profile:'profile'};
+let historyStack = ['home'];
+let currentPlanTab = 'planner';
+
+function navHTML(){
+  return `
+    <button class="nav-item" data-tab="home" data-goto="home">${iconSVG('home',20)}<span>Home</span></button>
+    <button class="nav-item" data-tab="kitchen" data-goto="kitchen">${iconSVG('kitchen',20)}<span>Kitchen</span></button>
+    <button class="nav-fab" data-goto="scan">${iconSVG('camera',22)}</button>
+    <button class="nav-item" data-tab="plan" data-goto="plan">${iconSVG('calendar',20)}<span>Plan</span></button>
+    <button class="nav-item" data-tab="profile" data-goto="profile">${iconSVG('user',20)}<span>Profile</span></button>
+  `;
+}
+function updateNavActive(screen){
+  const tab = TAB_FOR_SCREEN[screen];
+  document.querySelectorAll('.nav-item').forEach(btn=>btn.classList.toggle('active', btn.dataset.tab===tab));
+}
+function show(name){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelector(`.screen[data-screen="${name}"]`).classList.add('active');
+  window.scrollTo(0,0);
+  updateNavActive(name);
+}
+function renderFor(name){
+  if(name==='kitchen') renderKitchen();
+  if(name==='expiry') renderExpiry();
+  if(name==='ideas') renderIdeas();
+  if(name==='plan'){ renderMealDays(); renderShopping(); }
+  if(name==='profile') renderProfileMenu();
+}
+function goto(name){
+  if(ROOTS.includes(name)) historyStack = [name];
+  else historyStack.push(name);
+  renderFor(name);
+  show(name);
+}
+function goBack(){
+  if(historyStack.length>1) historyStack.pop();
+  show(historyStack[historyStack.length-1]);
+}
+
+/* ---------- toast ---------- */
+let toastTimer;
+function toast(msg){
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>el.classList.remove('show'), 1800);
+}
+
+/* ---------- kitchen / expiry ---------- */
+function rowHTML(i){
+  const tagLabel = i.status==='fresh' ? 'Fresh' : (i.due==='Today' ? 'Use today' : `Use in ${i.due}`);
+  return `<div class="list-row">
+    <div class="row-thumb">${EMOJI[i.name]||'🥫'}</div>
+    <div class="row-mid"><strong>${i.name}</strong><span>${i.qty} · ${i.loc}</span></div>
+    <span class="tag ${i.status}">${tagLabel}</span>
+  </div>`;
+}
+function renderKitchen(){
+  const q = (document.getElementById('kitchenSearch').value||'').toLowerCase();
+  const filterBtn = document.querySelector('#kitchenFilters .seg-btn.active');
+  const filter = filterBtn ? filterBtn.dataset.filter : 'All';
+  const items = KITCHEN_ITEMS.filter(i => (filter==='All' || i.loc===filter) && i.name.toLowerCase().includes(q));
+  const expiring = items.filter(i=>i.status!=='fresh');
+  const fresh = items.filter(i=>i.status==='fresh');
+  document.getElementById('kitchenExpiring').innerHTML = expiring.map(rowHTML).join('') || '<p class="empty">Nothing here.</p>';
+  document.getElementById('kitchenFresh').innerHTML = fresh.map(rowHTML).join('') || '<p class="empty">Nothing here.</p>';
+}
+function renderExpiry(){
+  const filterBtn = document.querySelector('#expiryFilters .seg-btn.active');
+  const filter = filterBtn ? filterBtn.dataset.filter : 'All';
+  const items = KITCHEN_ITEMS.filter(i=>i.status!=='fresh' && (filter==='All' || i.status===filter));
+  document.getElementById('expiryList').innerHTML = items.map(rowHTML).join('') || '<p class="empty">Nothing urgent — nice work!</p>';
+}
+
+/* ---------- ideas / recipe ---------- */
+function renderIdeas(){
+  document.getElementById('ideasList').innerHTML = RECIPES.map(r=>`
+    <button class="recipe-card" data-recipe="${r.id}">
+      <div class="recipe-thumb ${r.color}">${r.emoji}</div>
+      <div class="recipe-info">
+        <strong>${r.name}</strong>
+        <div class="recipe-sub"><span>⏱ ${r.time}</span><span class="tag ${r.tag==='Use today'?'urgent':'soon'}">${r.tag}</span></div>
+      </div>
+    </button>`).join('');
+}
+function openRecipe(id){
+  const r = RECIPES.find(x=>x.id===id);
+  if(!r) return;
+  document.getElementById('recipeHero').innerHTML = `
+    <button class="icon-btn ghost" data-back>${iconSVG('back')}</button>
+    <button class="icon-btn ghost" data-toast="More options — prototype only">${iconSVG('kebab')}</button>
+    <div class="hero-emoji">${r.emoji}</div>`;
+  document.getElementById('recipeName').textContent = r.name;
+  document.getElementById('recipeMeta').innerHTML = `<span>⏱ ${r.time}</span><span>· ${r.difficulty}</span><span>· Serves ${r.servings}</span>`;
+  document.getElementById('recipeUses').innerHTML = r.uses.map(u=>`<span class="chip">${u}</span>`).join('') + (r.moreCount ? `<span class="chip muted">+${r.moreCount} more</span>` : '');
+  document.getElementById('recipeIngredients').innerHTML = r.ingredients.map(i=>`<li>${i}</li>`).join('');
+  document.getElementById('recipeSteps').innerHTML = r.steps.map(s=>`<li>${s}</li>`).join('');
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelector('.tab-btn[data-tab="ingredients"]').classList.add('active');
+  document.getElementById('recipeIngredients').style.display = '';
+  document.getElementById('recipeSteps').style.display = 'none';
+}
+
+/* ---------- plan / shopping ---------- */
+function renderMealDays(){
+  document.getElementById('mealDays').innerHTML = MEAL_PLAN.map(d=>`
+    <div class="meal-day">
+      <span class="day-label">${d.day}</span>
+      ${d.meal
+        ? `<div class="meal-card"><span class="meal-emoji">${d.emoji}</span><span>${d.meal}</span></div>`
+        : `<button class="add-meal-btn" data-add-meal="${d.day}">+ Add Meal</button>`}
+    </div>`).join('');
+}
+function checkRow(it, group, idx){
+  return `<label class="check-row">
+    <input type="checkbox" data-group="${group}" data-idx="${idx}" ${it.checked?'checked':''}>
+    <span class="check-box">${it.checked?'✓':''}</span>
+    <span class="check-label">${it.name}</span>
+    ${it.qty ? `<span class="check-qty">${it.qty}</span>` : ''}
+  </label>`;
+}
+function renderShopping(){
+  document.getElementById('shopFromRecipes').innerHTML = SHOPPING.fromRecipes.map((it,idx)=>checkRow(it,'fromRecipes',idx)).join('');
+  document.getElementById('shopMayNeed').innerHTML = SHOPPING.youMayNeed.map((it,idx)=>checkRow(it,'youMayNeed',idx)).join('');
+}
+function renderProfileMenu(){
+  document.getElementById('profileMenu').innerHTML = PROFILE_MENU.map(label=>`
+    <button class="menu-row" data-toast="${label} — prototype only"><span>${label}</span>${iconSVG('chevronRight',18)}</button>`).join('');
+}
+
+/* ---------- init ---------- */
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('[data-bottomnav]').forEach(el => el.innerHTML = navHTML());
+  hydrateIcons();
+  renderKitchen(); renderExpiry(); renderIdeas(); renderMealDays(); renderShopping(); renderProfileMenu();
+  updateNavActive('home');
+
+  document.body.addEventListener('click', (e) => {
+    const recipeCard = e.target.closest('[data-recipe]');
+    if(recipeCard){ openRecipe(recipeCard.dataset.recipe); goto('recipe'); return; }
+
+    const addMeal = e.target.closest('[data-add-meal]');
+    if(addMeal){
+      const day = addMeal.dataset.addMeal;
+      const val = prompt(`What are you cooking on ${day}?`);
+      if(val){ const d = MEAL_PLAN.find(x=>x.day===day); d.meal = val; d.emoji = '🍽️'; renderMealDays(); }
+      return;
+    }
+
+    const back = e.target.closest('[data-back]');
+    if(back){ goBack(); return; }
+
+    const nav = e.target.closest('[data-goto]');
+    if(nav){ goto(nav.dataset.goto); return; }
+
+    const ts = e.target.closest('[data-toast]');
+    if(ts){ toast(ts.dataset.toast); return; }
+  });
+
+  document.getElementById('shutterBtn').addEventListener('click', () => {
+    document.getElementById('scanningOverlay').classList.add('show');
+    setTimeout(() => {
+      document.getElementById('scanningOverlay').classList.remove('show');
+      goto('recognize');
+    }, 1100);
+  });
+  document.getElementById('addToKitchenBtn').addEventListener('click', () => {
+    toast('Added Strawberries to your kitchen');
+    goto('kitchen');
+  });
+
+  document.getElementById('kitchenSearch').addEventListener('input', renderKitchen);
+  document.getElementById('kitchenFilters').addEventListener('click', (e) => {
+    const b = e.target.closest('.seg-btn'); if(!b) return;
+    document.querySelectorAll('#kitchenFilters .seg-btn').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active'); renderKitchen();
+  });
+  document.getElementById('expiryFilters').addEventListener('click', (e) => {
+    const b = e.target.closest('.seg-btn'); if(!b) return;
+    document.querySelectorAll('#expiryFilters .seg-btn').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active'); renderExpiry();
+  });
+
+  document.getElementById('moodGrid').addEventListener('click', (e) => {
+    const b = e.target.closest('.mood-btn'); if(!b) return;
+    document.querySelectorAll('.mood-btn').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+  });
+
+  document.querySelector('.tabbar').addEventListener('click', (e) => {
+    const b = e.target.closest('.tab-btn'); if(!b) return;
+    document.querySelectorAll('.tab-btn').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    const which = b.dataset.tab;
+    document.getElementById('recipeIngredients').style.display = which==='ingredients' ? '' : 'none';
+    document.getElementById('recipeSteps').style.display = which==='steps' ? '' : 'none';
+  });
+  document.getElementById('startCookingBtn').addEventListener('click', () => {
+    document.querySelector('.tab-btn[data-tab="steps"]').click();
+    toast("Cooking mode isn't in this prototype — here are the steps");
+  });
+  document.getElementById('surpriseAgainBtn').addEventListener('click', () => {
+    for(let i=RECIPES.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [RECIPES[i],RECIPES[j]]=[RECIPES[j],RECIPES[i]]; }
+    renderIdeas();
+    toast('Here are some new ideas');
+  });
+
+  document.getElementById('planTabs').addEventListener('click', (e) => {
+    const b = e.target.closest('.seg-btn'); if(!b) return;
+    document.querySelectorAll('#planTabs .seg-btn').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    currentPlanTab = b.dataset.plan;
+    document.getElementById('plannerPanel').style.display = currentPlanTab==='planner' ? '' : 'none';
+    document.getElementById('shoppingPanel').style.display = currentPlanTab==='shopping' ? '' : 'none';
+  });
+  document.getElementById('shoppingPanel').addEventListener('change', (e) => {
+    if(e.target.type!=='checkbox') return;
+    const group = e.target.dataset.group, idx = +e.target.dataset.idx;
+    SHOPPING[group][idx].checked = e.target.checked;
+    renderShopping();
+  });
+  document.getElementById('planFab').addEventListener('click', () => {
+    if(currentPlanTab==='shopping'){
+      const val = prompt('Add an item to your shopping list');
+      if(val){ SHOPPING.youMayNeed.push({name:val, checked:false}); renderShopping(); }
+    } else {
+      const empty = MEAL_PLAN.find(d=>!d.meal);
+      const day = empty ? empty.day : 'Fri';
+      const val = prompt(`What are you cooking on ${day}?`);
+      if(val){ const d = MEAL_PLAN.find(x=>x.day===day); d.meal = val; d.emoji = '🍽️'; renderMealDays(); }
+    }
+  });
+
+  document.getElementById('logoutBtn').addEventListener('click', () => {
+    historyStack = ['splash'];
+    show('splash');
+    toast('Logged out');
+  });
+});
+</script>
+</body>
+</html>
