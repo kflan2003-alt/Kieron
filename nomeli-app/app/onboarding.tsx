@@ -1,10 +1,9 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, Pressable } from 'react-native';
+import { View, Text, StyleSheet, TextInput, Pressable, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import Svg, { Path } from 'react-native-svg';
 import { Screen } from '../src/components/Screen';
 import { Button } from '../src/components/Button';
-import { Avocado } from '../src/components/Avocado';
 import { HandwrittenNote } from '../src/components/HandwrittenNote';
 import { usePreferencesStore } from '../src/store/usePreferencesStore';
 import { CookingConfidence, CookingTimePreference } from '../src/types';
@@ -112,11 +111,7 @@ export default function Onboarding() {
 
       {step === 'welcome' && (
         <View style={styles.welcome}>
-          <View style={styles.mascotWrap}>
-            <Avocado size={150} pose="wave" feet />
-            <Text style={styles.heart}>❤️</Text>
-          </View>
-          <Text style={styles.wordmark}>nomeli</Text>
+          <Image source={require('../assets/mascot-full.png')} style={styles.lockup} resizeMode="contain" />
           <Text style={styles.tagline}>Your food, figured out.</Text>
           <Text style={styles.body}>
             Nomeli helps you use what you've got, plan meals around your life and stop good food going to waste.
@@ -228,9 +223,7 @@ const styles = StyleSheet.create({
   backLink: { marginBottom: spacing.lg },
   backLinkLabel: { ...type.bodyMedium, color: color.avocadoDark },
   welcome: { flex: 1, alignItems: 'center', paddingTop: 24, gap: spacing.xs, position: 'relative', minHeight: 620 },
-  mascotWrap: { position: 'relative', marginBottom: spacing.sm },
-  heart: { position: 'absolute', top: -6, right: -18, fontSize: 22, color: color.urgentTomorrow },
-  wordmark: { ...type.wordmark, color: color.avocadoDark },
+  lockup: { width: 230, height: 230, marginBottom: spacing.sm },
   tagline: { ...type.body, color: color.inkDim, marginBottom: spacing.md },
   body: { ...type.body, color: color.ink, textAlign: 'center', marginBottom: spacing.xxl, lineHeight: 22, paddingHorizontal: spacing.sm },
   ctaBlock: { width: '100%', marginTop: 'auto', position: 'relative', zIndex: 2 },

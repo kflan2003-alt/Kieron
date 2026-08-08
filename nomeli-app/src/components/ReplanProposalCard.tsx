@@ -15,7 +15,7 @@ export function ReplanProposalCard() {
   return (
     <Card style={styles.card}>
       <View style={styles.header}>
-        <Avocado size={30} pose="thinking" />
+        <Avocado size={30} />
         <Text style={styles.title}>Nomeli has an idea</Text>
       </View>
       <Text style={styles.message}>{proposal.message}</Text>
