@@ -1,0 +1,51 @@
+{
+  "expo": {
+    "name": "nomeli",
+    "slug": "nomeli-app",
+    "scheme": "nomeli",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "backgroundColor": "#FBF6EE",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.nomeli.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Nomeli uses your camera to photograph food so it can be added to My Kitchen.",
+        "NSPhotoLibraryUsageDescription": "Nomeli can use photos from your library to add food to My Kitchen."
+      }
+    },
+    "android": {
+      "package": "com.nomeli.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Nomeli uses your camera to photograph food so it can be added to My Kitchen.",
+          "photosPermission": "Nomeli can use photos from your library to add food to My Kitchen."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#33604A"
+        }
+      ]
+    ]
+  }
+}
