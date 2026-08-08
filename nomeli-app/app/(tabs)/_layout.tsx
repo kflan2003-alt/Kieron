@@ -8,6 +8,7 @@ function ScanTabButton() {
   return (
     <View style={styles.scanButtonWrap} pointerEvents="box-none">
       <Pressable
+        testID="scan-tab-button"
         onPress={() => router.push('/scan')}
         style={({ pressed }) => [styles.scanButton, pressed && { opacity: 0.85 }]}
       >
