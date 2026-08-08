@@ -258,6 +258,17 @@ a{color:inherit;}
 /* ---------- toast ---------- */
 #toast{position:fixed;left:50%;bottom:110px;transform:translate(-50%,12px);max-width:88%;background:var(--ink);color:#fff;font-size:13px;font-weight:500;padding:12px 18px;border-radius:var(--r-pill);opacity:0;pointer-events:none;transition:all .25s ease;z-index:80;text-align:center;box-shadow:var(--shadow);}
 #toast.show{opacity:1;transform:translate(-50%,0);}
+
+/* ---------- inline modal (replaces window.prompt) ---------- */
+.modal-backdrop{position:fixed;inset:0;background:rgba(43,42,38,.45);display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s ease;z-index:90;}
+.modal-backdrop.show{opacity:1;pointer-events:auto;}
+.modal-card{width:100%;max-width:480px;background:var(--card);border-radius:var(--r-lg) var(--r-lg) 0 0;padding:20px 20px calc(20px + env(safe-area-inset-bottom));transform:translateY(16px);transition:transform .2s ease;}
+.modal-backdrop.show .modal-card{transform:translateY(0);}
+.modal-card label{display:block;font-size:14px;font-weight:600;margin-bottom:10px;}
+.modal-card input{width:100%;padding:14px 16px;border-radius:var(--r-md);border:1.5px solid var(--line);background:var(--cream);font-size:15px;outline:none;margin-bottom:16px;}
+.modal-card input:focus{border-color:var(--sage);}
+.modal-actions{display:flex;gap:10px;}
+.modal-actions .btn{flex:1;}
 </style>
 </head>
 <body>
@@ -493,6 +504,16 @@ a{color:inherit;}
 
 </div>
 <div id="toast"></div>
+<div class="modal-backdrop" id="modalBackdrop">
+  <div class="modal-card">
+    <label id="modalLabel" for="modalInput"></label>
+    <input type="text" id="modalInput" autocomplete="off">
+    <div class="modal-actions">
+      <button class="btn secondary" id="modalCancel">Cancel</button>
+      <button class="btn primary" id="modalOk">Add</button>
+    </div>
+  </div>
+</div>
 
 <script>
 /* ---------- icons ---------- */
@@ -625,6 +646,34 @@ function toast(msg){
   toastTimer = setTimeout(()=>el.classList.remove('show'), 1800);
 }
 
+/* ---------- inline modal (replaces window.prompt, which can be blocked in embedded viewers) ---------- */
+function askText(label, okLabel){
+  return new Promise((resolve) => {
+    const backdrop = document.getElementById('modalBackdrop');
+    const input = document.getElementById('modalInput');
+    const okBtn = document.getElementById('modalOk');
+    const cancelBtn = document.getElementById('modalCancel');
+    document.getElementById('modalLabel').textContent = label;
+    okBtn.textContent = okLabel || 'Add';
+    input.value = '';
+    backdrop.classList.add('show');
+    setTimeout(() => input.focus(), 50);
+    function done(val){
+      backdrop.classList.remove('show');
+      okBtn.removeEventListener('click', onOk);
+      cancelBtn.removeEventListener('click', onCancel);
+      input.removeEventListener('keydown', onKey);
+      resolve(val);
+    }
+    function onOk(){ done(input.value.trim() || null); }
+    function onCancel(){ done(null); }
+    function onKey(e){ if(e.key==='Enter') onOk(); if(e.key==='Escape') onCancel(); }
+    okBtn.addEventListener('click', onOk);
+    cancelBtn.addEventListener('click', onCancel);
+    input.addEventListener('keydown', onKey);
+  });
+}
+
 /* ---------- kitchen / expiry ---------- */
 function rowHTML(i){
   const tagLabel = i.status==='fresh' ? 'Fresh' : (i.due==='Today' ? 'Use today' : `Use in ${i.due}`);
@@ -721,8 +770,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const addMeal = e.target.closest('[data-add-meal]');
     if(addMeal){
       const day = addMeal.dataset.addMeal;
-      const val = prompt(`What are you cooking on ${day}?`);
-      if(val){ const d = MEAL_PLAN.find(x=>x.day===day); d.meal = val; d.emoji = '🍽️'; renderMealDays(); }
+      askText(`What are you cooking on ${day}?`).then((val) => {
+        if(val){ const d = MEAL_PLAN.find(x=>x.day===day); d.meal = val; d.emoji = '🍽️'; renderMealDays(); }
+      });
       return;
     }
 
@@ -800,13 +850,15 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   document.getElementById('planFab').addEventListener('click', () => {
     if(currentPlanTab==='shopping'){
-      const val = prompt('Add an item to your shopping list');
-      if(val){ SHOPPING.youMayNeed.push({name:val, checked:false}); renderShopping(); }
+      askText('Add an item to your shopping list').then((val) => {
+        if(val){ SHOPPING.youMayNeed.push({name:val, checked:false}); renderShopping(); }
+      });
     } else {
       const empty = MEAL_PLAN.find(d=>!d.meal);
       const day = empty ? empty.day : 'Fri';
-      const val = prompt(`What are you cooking on ${day}?`);
-      if(val){ const d = MEAL_PLAN.find(x=>x.day===day); d.meal = val; d.emoji = '🍽️'; renderMealDays(); }
+      askText(`What are you cooking on ${day}?`).then((val) => {
+        if(val){ const d = MEAL_PLAN.find(x=>x.day===day); d.meal = val; d.emoji = '🍽️'; renderMealDays(); }
+      });
     }
   });
 
