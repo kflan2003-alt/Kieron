@@ -1,7 +1,11 @@
-import { useEffect } from 'react';
+import { useEffect, useCallback } from 'react';
 import { Stack } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import { useFonts } from 'expo-font';
+import * as SplashScreen from 'expo-splash-screen';
+import { Baloo2_600SemiBold, Baloo2_700Bold } from '@expo-google-fonts/baloo-2';
+import { Caveat_600SemiBold } from '@expo-google-fonts/caveat';
 import { usePreferencesStore } from '../src/store/usePreferencesStore';
 import { useKitchenStore } from '../src/store/useKitchenStore';
 import { useMealPlanStore } from '../src/store/useMealPlanStore';
@@ -9,7 +13,17 @@ import { useShoppingStore } from '../src/store/useShoppingStore';
 import { initNotificationChannel, scheduleExpiryNotifications } from '../src/notifications/expiryNotifications';
 import { color } from '../src/theme/tokens';
 
+SplashScreen.preventAutoHideAsync().catch(() => {});
+
 export default function RootLayout() {
+  const [fontsLoaded] = useFonts({ Baloo2_700Bold, Baloo2_600SemiBold, Caveat_600SemiBold });
+  const onReady = useCallback(async () => {
+    if (fontsLoaded) await SplashScreen.hideAsync();
+  }, [fontsLoaded]);
+  useEffect(() => {
+    onReady();
+  }, [onReady]);
+
   const onboardingComplete = usePreferencesStore((s) => s.preferences.onboardingComplete);
   const preferences = usePreferencesStore((s) => s.preferences);
   const items = useKitchenStore((s) => s.items);
@@ -40,6 +54,8 @@ export default function RootLayout() {
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [items, preferences.notifyDaysBefore]);
+
+  if (!fontsLoaded) return null;
 
   return (
     <SafeAreaProvider>

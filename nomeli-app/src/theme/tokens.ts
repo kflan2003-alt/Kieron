@@ -56,23 +56,27 @@ export const spacing = {
 } as const;
 
 export const font = {
-  // System serif/sans pairing: a characterful display face for headings
-  // (Georgia reads warm and editorial, close to the brand's Playfair
-  // Display heritage from the earlier design) plus the OS default for
-  // body copy, so nothing needs bundling as a custom font for the
-  // prototype.
-  display: 'Georgia',
+  // Baloo 2: rounded, friendly display face for the wordmark and headings —
+  // matches the softer, more illustrated character-led direction.
+  // Caveat: a casual handwriting face used ONLY for the small hand-drawn
+  // annotations ("Tap me for details!"), never for real UI copy.
+  // Body text stays on the system stack for legibility at small sizes.
+  display: 'Baloo2_700Bold',
+  displaySemiBold: 'Baloo2_600SemiBold',
+  hand: 'Caveat_600SemiBold',
   body: undefined, // system default
 } as const;
 
 export const type = {
-  hero: { fontSize: 30, lineHeight: 36, fontWeight: '700' as const },
-  h1: { fontSize: 24, lineHeight: 30, fontWeight: '700' as const },
-  h2: { fontSize: 18, lineHeight: 24, fontWeight: '700' as const },
+  wordmark: { fontFamily: font.display, fontSize: 40, lineHeight: 44 },
+  hero: { fontFamily: font.display, fontSize: 26, lineHeight: 32 },
+  h1: { fontFamily: font.display, fontSize: 22, lineHeight: 28 },
+  h2: { fontFamily: font.displaySemiBold, fontSize: 17, lineHeight: 22 },
   body: { fontSize: 15, lineHeight: 21, fontWeight: '400' as const },
   bodyMedium: { fontSize: 15, lineHeight: 21, fontWeight: '600' as const },
   small: { fontSize: 13, lineHeight: 18, fontWeight: '400' as const },
   caption: { fontSize: 11, lineHeight: 14, fontWeight: '600' as const },
+  hand: { fontFamily: font.hand, fontSize: 17, lineHeight: 20 },
 } as const;
 
 export const shadow = {

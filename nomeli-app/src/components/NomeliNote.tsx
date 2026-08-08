@@ -1,5 +1,6 @@
 import { View, Text, StyleSheet } from 'react-native';
 import { Avocado } from './Avocado';
+import { SpeechBubble } from './SpeechBubble';
 import { color, radius, spacing, type } from '../theme/tokens';
 
 type Props = {
@@ -7,32 +8,33 @@ type Props = {
   message: string;
 };
 
-/** The small "Nomeli noticed…" assistant note — calm, concise, never bossy. */
+/** The "Nomeli noticed…" assistant note — calm, concise, never bossy. */
 export function NomeliNote({ eyebrow = 'Nomeli noticed', message }: Props) {
   return (
     <View style={styles.row}>
       <View style={styles.avatar}>
-        <Avocado size={26} />
+        <Avocado size={30} />
       </View>
-      <View style={styles.textCol}>
+      <SpeechBubble>
         <Text style={styles.eyebrow}>{eyebrow}</Text>
         <Text style={styles.message}>{message}</Text>
-      </View>
+      </SpeechBubble>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', gap: spacing.md, alignItems: 'flex-start' },
+  row: { flexDirection: 'row', gap: spacing.sm, alignItems: 'flex-start' },
   avatar: {
-    width: 38,
-    height: 38,
+    width: 42,
+    height: 42,
     borderRadius: radius.pill,
     backgroundColor: color.sageSoft,
     alignItems: 'center',
     justifyContent: 'center',
+    marginTop: 4,
+    flex: 0,
   },
-  textCol: { flex: 1, gap: 2 },
-  eyebrow: { ...type.caption, color: color.avocadoDark, textTransform: 'uppercase', letterSpacing: 0.4 },
-  message: { ...type.body, color: color.ink },
+  eyebrow: { ...type.caption, color: color.avocadoDark, textTransform: 'uppercase', letterSpacing: 0.5 },
+  message: { ...type.body, color: color.ink, marginTop: 2 },
 });

@@ -1,12 +1,15 @@
 import { useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
+import Svg, { Path } from 'react-native-svg';
 import { Screen } from '../../src/components/Screen';
 import { Card } from '../../src/components/Card';
 import { Button } from '../../src/components/Button';
 import { NomeliNote } from '../../src/components/NomeliNote';
 import { UrgencyBadge } from '../../src/components/UrgencyBadge';
 import { ReplanProposalCard } from '../../src/components/ReplanProposalCard';
+import { HandwrittenNote } from '../../src/components/HandwrittenNote';
+import { PeekingAvocado } from '../../src/components/Avocado';
 import { useKitchenStore } from '../../src/store/useKitchenStore';
 import { useMealPlanStore } from '../../src/store/useMealPlanStore';
 import { usePreferencesStore } from '../../src/store/usePreferencesStore';
@@ -14,7 +17,24 @@ import { getMealGenerationService } from '../../src/services/mealGenerationServi
 import { RECIPES } from '../../src/services/mockData';
 import { getExpiryUrgency, urgencyRank, todayISO } from '../../src/utils/expiry';
 import { foodEmoji } from '../../src/utils/foodEmoji';
-import { color, spacing, type, radius } from '../../src/theme/tokens';
+import { color, spacing, type, radius, shadow } from '../../src/theme/tokens';
+
+function BellIcon() {
+  return (
+    <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+      <Path d="M6 10a6 6 0 0 1 12 0c0 4 1.5 5.5 1.5 5.5H4.5S6 14 6 10Z" stroke={color.ink} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
+      <Path d="M10 18.5a2 2 0 0 0 4 0" stroke={color.ink} strokeWidth={1.8} strokeLinecap="round" />
+    </Svg>
+  );
+}
+
+function ChevronRight() {
+  return (
+    <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+      <Path d="m9 5 7 7-7 7" stroke={color.avocadoDark} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -73,25 +93,39 @@ export default function HomeScreen() {
   return (
     <Screen>
       <View style={styles.header}>
-        <Text style={styles.eyebrow}>{greeting},</Text>
-        <Text style={styles.name}>{firstName}</Text>
+        <View>
+          <Text style={styles.eyebrow}>{greeting},</Text>
+          <Text style={styles.name}>{firstName}</Text>
+        </View>
+        <Pressable style={styles.bellButton}>
+          <BellIcon />
+        </Pressable>
       </View>
 
-      <NomeliNote message={nomeliNote} />
+      <View style={styles.noteRow}>
+        <NomeliNote message={nomeliNote} />
+      </View>
 
       <ReplanProposalCard />
 
-      <Text style={styles.sectionTitle}>Tonight</Text>
+      <Text style={styles.sectionTitle}>Tonight ✨</Text>
       {tonightRecipe ? (
-        <Card style={styles.tonightCard}>
-          <Text style={styles.tonightEmoji}>{tonightRecipe.imageEmoji}</Text>
-          <Text style={styles.tonightName}>{tonightRecipe.name}</Text>
-          <Text style={styles.tonightMeta}>
-            {tonightRecipe.prepMinutes} mins · Uses {tonightHaveCount} ingredient{tonightHaveCount === 1 ? '' : 's'} from your kitchen
-          </Text>
-          {tonight?.reason ? <Text style={styles.tonightReason}>{tonight.reason}</Text> : null}
-          <Button label="View meal" onPress={() => router.push(`/meal/${tonightRecipe.id}`)} block />
-        </Card>
+        <View style={styles.tonightWrap}>
+          <Card style={styles.tonightCard} padded={false}>
+            <View style={styles.tonightPhoto}>
+              <Text style={styles.tonightEmoji}>{tonightRecipe.imageEmoji}</Text>
+            </View>
+            <View style={styles.tonightBody}>
+              <Text style={styles.tonightName}>{tonightRecipe.name}</Text>
+              <Text style={styles.tonightMeta}>
+                {tonightRecipe.prepMinutes} mins · Uses {tonightHaveCount} ingredient{tonightHaveCount === 1 ? '' : 's'} from your kitchen
+              </Text>
+              {tonight?.reason ? <Text style={styles.tonightReason}>{tonight.reason}</Text> : null}
+              <Button label="View meal" onPress={() => router.push(`/meal/${tonightRecipe.id}`)} block style={styles.viewMealButton} />
+            </View>
+          </Card>
+          <HandwrittenNote label="Nice and easy! ❤️" curve="down-right" style={styles.tonightNote} />
+        </View>
       ) : (
         <Card>
           <Text style={styles.emptyText}>Nothing planned for tonight yet.</Text>
@@ -99,11 +133,12 @@ export default function HomeScreen() {
         </Card>
       )}
 
-      <View style={styles.sectionRow}>
-        <Text style={styles.sectionTitle}>Use Soon</Text>
-      </View>
+      <Text style={styles.sectionTitle}>Use Soon</Text>
       {useSoon.length === 0 ? (
-        <Text style={styles.emptyText}>Nothing expiring soon.</Text>
+        <View style={styles.emptyRow}>
+          <Text style={styles.emptyText}>Nothing expiring soon.</Text>
+          <PeekingAvocado size={56} side="right" style={styles.useSoonPeek} />
+        </View>
       ) : (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.useSoonRow}>
           {useSoon.map((item) => (
@@ -118,45 +153,51 @@ export default function HomeScreen() {
 
       <Text style={styles.sectionTitle}>Nomeli Suggests</Text>
       {suggestion ? (
-        <Card style={styles.suggestCard}>
+        <Card onPress={() => {
+          const target = entries.find((e) => e.status === 'cooking' && !e.recipeId) ?? entries.find((e) => e.date === today);
+          if (target) setDayRecipe(target.date, suggestion.id, "You've already got everything you need for this.");
+        }} style={styles.suggestCard}>
           <Text style={styles.suggestText}>
             You have everything needed for <Text style={styles.suggestBold}>{suggestion.name.toLowerCase()}</Text>.
           </Text>
-          <Button
-            label="Add to plan"
-            variant="secondary"
-            onPress={() => {
-              const target = entries.find((e) => e.status === 'cooking' && !e.recipeId) ?? entries.find((e) => e.date === today);
-              if (target) setDayRecipe(target.date, suggestion.id, "You've already got everything you need for this.");
-            }}
-          />
+          <ChevronRight />
         </Card>
       ) : (
-        <Card>
-          <Text style={styles.emptyText}>Scan a few items and Nomeli will start suggesting meals.</Text>
-        </Card>
+        <View style={styles.emptyRow}>
+          <Card style={{ flex: 1 }}>
+            <Text style={styles.emptyText}>Scan a few items and Nomeli will start suggesting meals.</Text>
+          </Card>
+        </View>
       )}
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  header: { marginTop: spacing.sm, marginBottom: spacing.lg },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginTop: spacing.sm, marginBottom: spacing.lg },
   eyebrow: { ...type.body, color: color.inkDim },
-  name: { ...type.hero, fontFamily: undefined, color: color.ink },
-  sectionRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  name: { ...type.hero, color: color.ink },
+  bellButton: { width: 40, height: 40, borderRadius: radius.pill, backgroundColor: color.surface, alignItems: 'center', justifyContent: 'center', ...shadow.soft },
+  noteRow: { position: 'relative' },
   sectionTitle: { ...type.h2, color: color.ink, marginTop: spacing.xl, marginBottom: spacing.md },
-  tonightCard: { alignItems: 'flex-start', gap: spacing.xs },
-  tonightEmoji: { fontSize: 40, marginBottom: spacing.xs },
+  tonightWrap: { position: 'relative' },
+  tonightCard: { overflow: 'hidden' },
+  tonightPhoto: { height: 130, backgroundColor: color.sageSoft, alignItems: 'center', justifyContent: 'center' },
+  tonightEmoji: { fontSize: 54 },
+  tonightBody: { padding: spacing.lg, gap: spacing.xs },
   tonightName: { ...type.h1, color: color.ink },
   tonightMeta: { ...type.small, color: color.inkDim, marginBottom: spacing.xs },
   tonightReason: { ...type.small, color: color.avocadoDark, marginBottom: spacing.md, fontStyle: 'italic' },
+  viewMealButton: { marginTop: spacing.xs },
+  tonightNote: { position: 'absolute', right: 10, top: -30 },
   emptyText: { ...type.body, color: color.inkDim, marginBottom: spacing.md },
+  emptyRow: { position: 'relative', paddingRight: 40 },
+  useSoonPeek: { bottom: -10 },
   useSoonRow: { marginBottom: spacing.sm },
   useSoonCard: { width: 120, marginRight: spacing.md, alignItems: 'flex-start', gap: spacing.xs },
   useSoonEmoji: { fontSize: 26 },
   useSoonName: { ...type.bodyMedium, color: color.ink },
-  suggestCard: { gap: spacing.md },
-  suggestText: { ...type.body, color: color.ink },
+  suggestCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md },
+  suggestText: { ...type.body, color: color.ink, flex: 1 },
   suggestBold: { fontWeight: '700' },
 });

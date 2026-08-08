@@ -9,12 +9,13 @@ type Props = {
   onPress: () => void;
   variant?: Variant;
   icon?: ReactNode;
+  trailingIcon?: ReactNode;
   block?: boolean;
   disabled?: boolean;
   style?: ViewStyle;
 };
 
-export function Button({ label, onPress, variant = 'primary', icon, block, disabled, style }: Props) {
+export function Button({ label, onPress, variant = 'primary', icon, trailingIcon, block, disabled, style }: Props) {
   return (
     <Pressable
       onPress={onPress}
@@ -30,6 +31,7 @@ export function Button({ label, onPress, variant = 'primary', icon, block, disab
     >
       {icon}
       <Text style={[styles.label, variantTextStyles[variant]]}>{label}</Text>
+      {trailingIcon}
     </Pressable>
   );
 }

@@ -45,7 +45,8 @@
           "icon": "./assets/icon.png",
           "color": "#33604A"
         }
-      ]
+      ],
+      "expo-splash-screen"
     ]
   }
 }

@@ -59,7 +59,7 @@ export default function ScanConfirmScreen() {
   if (loading) {
     return (
       <View style={styles.loadingRoot}>
-        <Avocado size={80} mood="thinking" />
+        <Avocado size={80} pose="thinking" />
         <ActivityIndicator style={{ marginTop: spacing.lg }} color={color.avocadoDark} />
         <Text style={styles.loadingText}>Nomeli is checking your food…</Text>
       </View>

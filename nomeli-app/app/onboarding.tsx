@@ -1,12 +1,32 @@
 import { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
+import Svg, { Path } from 'react-native-svg';
 import { Screen } from '../src/components/Screen';
 import { Button } from '../src/components/Button';
 import { Avocado } from '../src/components/Avocado';
+import { HandwrittenNote } from '../src/components/HandwrittenNote';
 import { usePreferencesStore } from '../src/store/usePreferencesStore';
 import { CookingConfidence, CookingTimePreference } from '../src/types';
 import { color, radius, spacing, type } from '../src/theme/tokens';
+
+function BackgroundBlob() {
+  return (
+    <Svg
+      width="100%"
+      height={220}
+      viewBox="0 0 400 220"
+      style={{ position: 'absolute', bottom: 0, left: 0 }}
+      preserveAspectRatio="xMidYMax slice"
+    >
+      <Path
+        d="M0 120C60 60 140 40 220 70C300 100 340 40 400 70V220H0Z"
+        fill={color.sageSoft}
+        opacity={0.6}
+      />
+    </Svg>
+  );
+}
 
 type Step = 'welcome' | 'name' | 'people' | 'diet' | 'allergies' | 'dislikes' | 'cuisines' | 'confidence' | 'time';
 
@@ -92,13 +112,30 @@ export default function Onboarding() {
 
       {step === 'welcome' && (
         <View style={styles.welcome}>
-          <Avocado size={110} mood="happy" />
+          <View style={styles.mascotWrap}>
+            <Avocado size={150} pose="wave" feet />
+            <Text style={styles.heart}>❤️</Text>
+          </View>
           <Text style={styles.wordmark}>nomeli</Text>
           <Text style={styles.tagline}>Your food, figured out.</Text>
           <Text style={styles.body}>
             Nomeli helps you use what you've got, plan meals around your life and stop good food going to waste.
           </Text>
-          <Button label="Get Started" onPress={next} block style={styles.mainButton} />
+          <View style={styles.ctaBlock}>
+            <HandwrittenNote label="Let's get cooking!" curve="down-right" style={styles.ctaNote} />
+            <Button
+              label="Get Started"
+              onPress={next}
+              block
+              trailingIcon={<Text style={styles.buttonArrow}>→</Text>}
+            />
+          </View>
+          <Pressable onPress={finish} style={styles.loginLink}>
+            <Text style={styles.loginLinkLabel}>
+              Already have an account? <Text style={styles.loginLinkStrong}>Log in</Text>
+            </Text>
+          </Pressable>
+          <BackgroundBlob />
         </View>
       )}
 
@@ -190,11 +227,18 @@ const styles = StyleSheet.create({
   content: { flexGrow: 1, justifyContent: 'flex-start', paddingTop: spacing.xl },
   backLink: { marginBottom: spacing.lg },
   backLinkLabel: { ...type.bodyMedium, color: color.avocadoDark },
-  welcome: { alignItems: 'center', paddingTop: 40, gap: spacing.sm },
-  wordmark: { ...type.hero, fontSize: 34, color: color.avocadoDark, marginTop: spacing.lg },
+  welcome: { flex: 1, alignItems: 'center', paddingTop: 24, gap: spacing.xs, position: 'relative', minHeight: 620 },
+  mascotWrap: { position: 'relative', marginBottom: spacing.sm },
+  heart: { position: 'absolute', top: -6, right: -18, fontSize: 22, color: color.urgentTomorrow },
+  wordmark: { ...type.wordmark, color: color.avocadoDark },
   tagline: { ...type.body, color: color.inkDim, marginBottom: spacing.md },
-  body: { ...type.body, color: color.ink, textAlign: 'center', marginBottom: spacing.xxl, lineHeight: 22 },
-  mainButton: { marginTop: 'auto' },
+  body: { ...type.body, color: color.ink, textAlign: 'center', marginBottom: spacing.xxl, lineHeight: 22, paddingHorizontal: spacing.sm },
+  ctaBlock: { width: '100%', marginTop: 'auto', position: 'relative', zIndex: 2 },
+  ctaNote: { position: 'absolute', right: 8, top: -40 },
+  buttonArrow: { color: color.white, fontSize: 17, fontWeight: '700' },
+  loginLink: { marginTop: spacing.lg, marginBottom: spacing.xs, zIndex: 2 },
+  loginLinkLabel: { ...type.small, color: color.inkDim },
+  loginLinkStrong: { color: color.avocadoDark, fontWeight: '700' },
   step: { gap: spacing.lg },
   question: { ...type.h1, color: color.ink, marginBottom: spacing.sm },
   input: {
