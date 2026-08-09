@@ -4,6 +4,7 @@ import * as stats from './stats.js';
 import { lineChartSVG } from './charts.js';
 import * as gcal from './calendar.js';
 import * as notif from './notifications.js';
+import { currentProgramStatus } from './runProgram.js';
 import {
   addDays, isoDate, parseIsoDate, startOfWeek, formatDayLabel, formatWeekRange,
   formatDateLong, escapeHtml, uid, qs, qsa, DAY_SHORT,
@@ -108,8 +109,14 @@ function renderHome() {
       </div>`;
   }).join('');
 
+  const runStatus = currentProgramStatus(new Date());
+  const runBannerHtml = runStatus
+    ? `<div class="run-plan-banner">🏃 Half-marathon plan — Week ${runStatus.weekNumber} of ${runStatus.totalWeeks} · ${runStatus.complete ? 'Complete 🏁' : runStatus.phase}</div>`
+    : '';
+
   qs('#view-root').innerHTML = `
     <div class="streak-banner">🔥 ${streak} day streak · ${weeks} week${weeks === 1 ? '' : 's'} completed</div>
+    ${runBannerHtml}
     <div class="week-nav">
       <button class="btn btn-icon" data-action="week-prev" aria-label="Previous week">‹</button>
       <div class="week-range">${formatWeekRange(state.weekStart)}</div>
@@ -159,6 +166,18 @@ function renderLoggerModal() {
   } else {
     bodyHtml = session.exercises.map((ex, exIdx) => {
       const existingEx = existing && existing.exercises && existing.exercises.find((e) => e.name === ex.name);
+      const isDistanceBased = ex.sets[0] && ex.sets[0].targetKm != null;
+      if (isDistanceBased) {
+        const prevKm = existingEx ? existingEx.sets[0].km : ex.sets[0].targetKm;
+        return `
+          <div class="exercise-block">
+            <div class="exercise-name">${escapeHtml(ex.name)} <span class="exercise-target">${escapeHtml(ex.targetLabel)}</span></div>
+            <div class="set-row">
+              <span class="set-label">Distance run (km)</span>
+              <input type="number" min="0" step="0.1" class="input-km" data-ex="${exIdx}" value="${prevKm ?? ''}" />
+            </div>
+          </div>`;
+      }
       if (isTimeBased(ex)) {
         const prevMinutes = existingEx ? existingEx.sets[0].minutes : ex.sets[0].targetMinutes;
         return `
@@ -233,6 +252,12 @@ function handleSaveLog() {
   let exercises = [];
   if (session.type !== 'korfball') {
     exercises = session.exercises.map((ex, exIdx) => {
+      const isDistanceBased = ex.sets[0] && ex.sets[0].targetKm != null;
+      if (isDistanceBased) {
+        const input = qs(`.input-km[data-ex="${exIdx}"]`);
+        const km = input && input.value !== '' ? Number(input.value) : null;
+        return { name: ex.name, sets: [{ km }] };
+      }
       const isTimeBased = ex.sets[0] && ex.sets[0].targetMinutes != null;
       if (isTimeBased) {
         const input = qs(`.input-minutes[data-ex="${exIdx}"]`);

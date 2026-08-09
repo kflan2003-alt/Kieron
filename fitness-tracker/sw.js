@@ -1,5 +1,8 @@
-// Cache-first app shell so the tracker works offline. Google Calendar/sign-in
-// requests are cross-origin and always go straight to the network.
+// Network-first app shell: whenever there's a signal, always fetch the latest
+// files (and refresh the cache) so code updates show up on next open with no
+// reinstall needed. Falls back to the cache only when actually offline.
+// Google Calendar/sign-in requests are cross-origin and always go straight to
+// the network untouched.
 
 const CACHE_NAME = 'fitness-tracker-v1';
 const APP_SHELL = [
@@ -10,6 +13,7 @@ const APP_SHELL = [
   './js/app.js',
   './js/db.js',
   './js/schedule.js',
+  './js/runProgram.js',
   './js/stats.js',
   './js/charts.js',
   './js/calendar.js',
@@ -44,16 +48,13 @@ self.addEventListener('fetch', (event) => {
   if (url.origin !== self.location.origin) return; // let Google API/auth calls pass through untouched
 
   event.respondWith(
-    caches.match(req).then((cached) => {
-      if (cached) return cached;
-      return fetch(req).then((res) => {
-        if (res && res.ok) {
-          const clone = res.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(req, clone));
-        }
-        return res;
-      }).catch(() => cached);
-    })
+    fetch(req).then((res) => {
+      if (res && res.ok) {
+        const clone = res.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(req, clone));
+      }
+      return res;
+    }).catch(() => caches.match(req))
   );
 });
 
