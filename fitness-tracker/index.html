@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+<title>Fitness Tracker</title>
+<meta name="description" content="Personal fitness tracker — weekly training plan, exercise logging, progress charts and Google Calendar sync." />
+<meta name="theme-color" content="#111827" />
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="icon" href="icons/icon-192.png" type="image/png" />
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Fitness" />
+<link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+<div id="app">
+  <header class="topbar">
+    <span class="topbar-title">💪 Fitness Tracker</span>
+  </header>
+
+  <main id="view-root" class="view-root"></main>
+
+  <nav class="tabbar">
+    <button class="tab-btn active" data-action="switch-tab" data-tab="home">
+      <span class="tab-icon">🏠</span><span class="tab-label">Home</span>
+    </button>
+    <button class="tab-btn" data-action="switch-tab" data-tab="progress">
+      <span class="tab-icon">📈</span><span class="tab-label">Progress</span>
+    </button>
+    <button class="tab-btn" data-action="switch-tab" data-tab="body">
+      <span class="tab-icon">⚖️</span><span class="tab-label">Body</span>
+    </button>
+    <button class="tab-btn" data-action="switch-tab" data-tab="settings">
+      <span class="tab-icon">⚙️</span><span class="tab-label">Settings</span>
+    </button>
+  </nav>
+
+  <div id="modal-root"></div>
+  <div id="toast-root" class="toast-root"></div>
+</div>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
