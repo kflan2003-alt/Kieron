@@ -103,14 +103,20 @@ function localDateTimeString(date, hh, mm) {
 
 function buildDescription(session) {
   const lines = [];
-  if (session.exercises && session.exercises.length) {
+  const isRunDay = session.dayKey === 'tuesday' || session.dayKey === 'wednesday';
+  if (isRunDay && session.type === 'run') {
+    // Tue/Wed follow a week-by-week progressive running plan, so the exact
+    // prescription changes over time — a single recurring event can't show
+    // a different description each week, so point at the app instead.
+    lines.push('Follows your progressive half-marathon running plan — open the Fitness Tracker app for today\'s specific run/walk workout.');
+  } else if (session.exercises && session.exercises.length) {
     for (const ex of session.exercises) {
       lines.push(`• ${ex.name}: ${ex.targetLabel}`);
     }
   } else if (session.type === 'korfball') {
     lines.push('Korfball training / match.');
   }
-  if (session.dayKey === 'tuesday' || session.dayKey === 'wednesday') {
+  if (isRunDay) {
     lines.push('', 'Short sleep day — keep intensity easy.');
   }
   return lines.join('\n');

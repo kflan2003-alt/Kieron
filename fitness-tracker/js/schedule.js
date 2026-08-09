@@ -2,6 +2,7 @@
 // given calendar date's session actually is (default, or korfball override).
 
 import { DAY_KEYS, DAY_LABELS, dayKeyFor, isoDate } from './utils.js';
+import { getRunProgramSession } from './runProgram.js';
 
 // The four lifts tracked on the Progress screen, matched by exact exercise name.
 export const MAIN_LIFTS = ['Bench press', 'Squat', 'Deadlift', 'Overhead press'];
@@ -111,16 +112,48 @@ export function korfballSession(dayKey) {
 
 // Resolves the effective session for a specific calendar date, applying
 // ad-hoc per-date overrides first, then the recurring Settings assignment.
+function applyRunProgram(dayKey, date) {
+  const template = TEMPLATE[dayKey];
+  const program = getRunProgramSession(date);
+  if (!program) return template;
+
+  const runSet = program.targetKm != null
+    ? { label: 'Long run', targetKm: program.targetKm }
+    : { label: 'Run', targetMinutes: program.targetMinutes };
+
+  const exercises = [
+    { name: 'Run', targetLabel: program.description, sets: [runSet] },
+    // Tuesday keeps its trailing mobility block; Wednesday stays pure run.
+    ...(dayKey === 'tuesday' ? [template.exercises.find((e) => e.name === 'Mobility')] : []),
+  ].filter(Boolean);
+
+  return {
+    ...template,
+    name: `${program.phase} — ${program.phaseNote}`,
+    exercises,
+    runProgram: program,
+  };
+}
+
 export function getSessionForDate(date, state) {
   const dayKey = dayKeyFor(date);
   const iso = isoDate(date);
   const adhoc = state.dayOverrides[iso];
   if (adhoc === 'korfball') return { ...korfballSession(dayKey), date, iso };
   if (state.settings.korfballDay === dayKey) return { ...korfballSession(dayKey), date, iso };
+
+  if (dayKey === 'tuesday' || dayKey === 'wednesday') {
+    return { ...applyRunProgram(dayKey, date), date, iso };
+  }
   return { ...TEMPLATE[dayKey], date, iso };
 }
 
 export function durationForSession(session, settings) {
+  if (session.runProgram) {
+    const p = session.runProgram;
+    if (p.targetKm != null) return Math.round(p.targetKm * 7) + (session.dayKey === 'tuesday' ? settings.mobilityDuration : 0);
+    if (p.targetMinutes != null) return p.targetMinutes + (session.dayKey === 'tuesday' ? settings.mobilityDuration : 0);
+  }
   switch (session.type) {
     case 'gym': return settings.gymDuration;
     case 'run': return settings.runDuration;

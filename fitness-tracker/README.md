@@ -18,6 +18,9 @@ Calendar sync.
 - **Progress charts** — weight-over-time for bench press, squat, deadlift and
   overhead press, using estimated 1RM (Epley formula) so different rep ranges
   are comparable. New PRs are automatically detected and highlighted.
+- **Half-marathon running plan** — Tuesday and Wednesday (your two run days)
+  follow a progressive, week-by-week program instead of a static "run for 25
+  minutes" target. See [Half-marathon plan](#half-marathon-plan) below.
 - **Bodyweight log** — quick add form and trend chart.
 - **Settings** — workout start time, session durations per session type,
   which day (if any) is your recurring korfball day, theme, and the Google
@@ -31,6 +34,44 @@ Calendar sync.
   events instead of creating duplicates.
 - **PWA** — installable to your home screen, works offline (service worker
   caches the app shell), dark mode, best-effort local reminder notification.
+
+## Half-marathon plan
+
+`js/runProgram.js` defines a progressive "zero to half marathon" program,
+delivered across your two existing run slots (Tuesday and Wednesday) instead
+of a fixed weekly run duration:
+
+- **Phase 1 — Learn to Run** (14 weeks, 28 sessions): run/walk intervals
+  building from 1-minute jogging efforts up to 38–40 minutes continuous,
+  adapted from the classic Couch-to-5K progression but spread across 2
+  sessions/week instead of the usual 3.
+- **Phase 2 — Half-Marathon Build** (14 weeks): Tuesday becomes a steady
+  30–40 minute run, Wednesday becomes a long run that grows from 6 km to a
+  peak of 18 km, with a lighter cutback week every 4th week to manage
+  fatigue.
+- **Taper** (2 weeks): easing off before race day.
+
+That's ~30 weeks (about 7 months) from a standing start to race-ready. It's
+deliberately conservative — you're building running volume on top of already
+heavy squat/deadlift days and korfball, with only 2 dedicated run days/week
+(most half-marathon plans use 3–4), so the priority is finishing injury-free
+over finishing fast. If a session ever feels too hard, just repeat it rather
+than moving to the next one; the plan doesn't mind waiting, and there's
+nothing enforcing you move forward on schedule.
+
+The plan is date-anchored: `PLAN_START_DATE` in `js/runProgram.js` (currently
+the first Tuesday after this was built) is when Session 1 begins. Any
+Tuesday/Wednesday before that date still shows the old static "easy run"
+session; any on/after it shows the plan's prescription for that date. To
+push the start date back, change that one constant. Long runs are logged by
+distance (km) instead of time, since distance is what actually matters for
+half-marathon readiness.
+
+Google Calendar sync deliberately does **not** try to put the exact weekly
+prescription into the recurring Tuesday/Wednesday events — a single
+recurring event can't show different text for each future occurrence, so the
+calendar description just points back to the app for that day's specific
+workout instead of going stale.
 
 ## Hosting it
 
