@@ -62,9 +62,22 @@ function render() {
   renderModal(ctx);
 }
 
+// Some hosts stamp data-theme on the root themselves to pass their own
+// light/dark choice down. "Auto" has to mean "don't touch that", so this only
+// ever clears a stamp it put there itself.
+let themeStampedByApp = false;
+
 function applyTheme(theme) {
-  if (theme === 'auto') delete document.documentElement.dataset.theme;
-  else document.documentElement.dataset.theme = theme;
+  const root = document.documentElement;
+  if (theme === 'auto') {
+    if (themeStampedByApp) {
+      delete root.dataset.theme;
+      themeStampedByApp = false;
+    }
+    return;
+  }
+  root.dataset.theme = theme;
+  themeStampedByApp = true;
 }
 
 function toast(message) {
@@ -618,7 +631,10 @@ function boot() {
   store.load();
   render();
 
-  if ('serviceWorker' in navigator) {
+  // The single-file build has no manifest and no sw.js beside it; the installed
+  // PWA has both. Registering only when the manifest is present keeps one
+  // codebase serving both without a build-time switch.
+  if ('serviceWorker' in navigator && document.querySelector('link[rel="manifest"]')) {
     navigator.serviceWorker.register('./sw.js').catch(() => { /* offline support is optional */ });
   }
 }

@@ -1,5 +1,6 @@
 /* ---------- Theme tokens ---------- */
 :root {
+  color-scheme: light;
   --bg: #f4f5f7;
   --surface: #ffffff;
   --surface-alt: #eef0f4;
@@ -19,6 +20,7 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
+    color-scheme: dark;
     --bg: #0d0f13;
     --surface: #181b21;
     --surface-alt: #21252d;
@@ -36,6 +38,7 @@
 }
 
 :root[data-theme="dark"] {
+  color-scheme: dark;
   --bg: #0d0f13;
   --surface: #181b21;
   --surface-alt: #21252d;
@@ -52,6 +55,13 @@
 }
 
 * { box-sizing: border-box; }
+
+/* Figures that sit in a column — costs, totals, protein — line up only with
+   tabular figures, and this app is mostly columns of numbers. */
+.stat-value, .meal-cost, .shop-cost, .day-meta, .card-sub, .ing-amt,
+.total-bar, .week-range {
+  font-variant-numeric: tabular-nums;
+}
 
 html, body {
   margin: 0;
@@ -73,6 +83,23 @@ body { padding-bottom: env(safe-area-inset-bottom); }
 }
 
 button, input, select, textarea { font-family: inherit; }
+
+/* Keyboard focus must stay visible everywhere, including on the tinted
+   surfaces where a default outline disappears. */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .btn:active { transform: none; }
+}
 
 /* ---------- Topbar ---------- */
 .topbar {

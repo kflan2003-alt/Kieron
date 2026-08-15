@@ -7,6 +7,21 @@ sessions a week.
 Offline, no accounts, no server. Everything lives in your phone's browser
 storage.
 
+## Two ways to run it
+
+**As a Claude artifact** — one self-contained page, nothing to install. Built
+from the same source with `node tools/build-single-file.mjs`, which flattens the
+modules and inlines the CSS into `dist/meal-prep.html`. Rerun it after any change
+to `js/` or `css/` and republish.
+
+**As a home screen app** — the multi-file version below, served from GitHub
+Pages, which adds the app icon, full-screen launch and offline caching.
+
+Both share one codebase and one set of behaviour. What differs: the installed
+version registers a service worker (the single-file build skips it, having no
+`sw.js` beside it), and each keeps its own separate saved data, since browser
+storage doesn't cross origins.
+
 ## Get it onto your phone's home screen
 
 Hosted via GitHub Pages at:
@@ -103,6 +118,13 @@ plan comes in several pounds cheaper.
 somewhere safe. **Import data** puts it back. That's the only backup — there's
 no cloud sync, and clearing your browser data clears the app.
 
+Export is also how you move your corrected prices from one version to the other,
+since they save separately.
+
+If a browser blocks storage entirely — iOS private browsing, some embedded
+frames — the app says so in a banner and keeps working from memory for that
+session. Export before closing the tab or the prices go with it.
+
 ## Notes
 
 - Nutrition figures are typical values for the food, not label-exact. Protein
@@ -111,6 +133,17 @@ no cloud sync, and clearing your browser data clears the app.
 - Recipes are editable and you can add your own; anything you already cook works
   as long as you list the ingredients and rough per-portion amounts.
 - Nothing in the app makes a network call. There is nothing to sign into.
+
+## Building the single-file version
+
+```
+node tools/build-single-file.mjs [outfile]     # default: dist/meal-prep.html
+```
+
+A ~30-line bundler rather than a dependency: each module under `js/` becomes a
+namespace object and the imports are rewritten to destructure from it, so named
+imports and `import * as store` both keep working with no changes to the source.
+`dist/` is committed so the published page and the repo can't drift apart.
 
 ## Regenerating the icons
 

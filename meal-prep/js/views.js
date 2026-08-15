@@ -6,6 +6,7 @@ import {
   escapeHtml, money, amountLabel, formatWeekRange, addDays, clamp,
 } from './utils.js';
 import { recipeStats, unitPrice, outstandingTotal } from './costing.js';
+import { isPersistent } from './store.js';
 import { CATEGORIES } from './seed.js';
 import { cookSessions, cookBlocks, daysAfterCook } from './planner.js';
 
@@ -78,6 +79,8 @@ export function renderWeek(ctx) {
       </div>
     </div>
 
+    ${storageWarning()}
+
     ${proteinShort && plan.generatedAt ? `
       <div class="notice">
         This is the best it could do: nothing in the recipe list reaches
@@ -102,6 +105,18 @@ export function renderWeek(ctx) {
 
     ${DAY_KEYS.map((dayKey, i) => dayCard(dayKey, addDays(weekStart, i), ctx, blocks)).join('')}
   `;
+}
+
+// Shown wherever losing data would hurt. Silence here would be worse than a
+// banner: prices you typed in are the one thing in the app you can't redo fast.
+export function storageWarning() {
+  if (isPersistent()) return '';
+  return `
+    <div class="notice warn">
+      This browser won't let the page save anything, so your prices and plan will
+      be gone when you close the tab. Everything still works for now — use
+      <strong>More → Export data</strong> before you leave if you want to keep it.
+    </div>`;
 }
 
 function weekNav(weekStart) {
@@ -516,6 +531,7 @@ export function renderMore(ctx) {
     </div>
 
     <div class="section-title">Your data</div>
+    ${storageWarning()}
     <div class="card">
       <div class="field-hint" style="margin-bottom:10px">
         Everything lives in this browser on this phone. Nothing is uploaded

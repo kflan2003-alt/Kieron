@@ -1,0 +1,3048 @@
+<meta charset="utf-8" />
+<title>Meal Prep</title>
+<meta name="description" content="Weekly meal plan, shopping list and exact cost — cheap, high protein, two cook sessions a week." />
+<meta name="theme-color" content="#16794a" />
+
+<style>
+/* ---------- Theme tokens ---------- */
+:root {
+  color-scheme: light;
+  --bg: #f4f5f7;
+  --surface: #ffffff;
+  --surface-alt: #eef0f4;
+  --text: #14161a;
+  --text-muted: #666c76;
+  --border: #e1e4e9;
+  --accent: #16794a;
+  --accent-soft: rgba(22, 121, 74, 0.12);
+  --accent-text: #ffffff;
+  --danger: #dc2626;
+  --warn: #b45309;
+  --warn-soft: rgba(180, 83, 9, 0.12);
+  --success: #16a34a;
+  --shadow: 0 1px 3px rgba(15, 18, 23, 0.08), 0 1px 2px rgba(15, 18, 23, 0.06);
+  --radius: 14px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #0d0f13;
+    --surface: #181b21;
+    --surface-alt: #21252d;
+    --text: #eef0f3;
+    --text-muted: #9aa1ac;
+    --border: #2a2e37;
+    --accent: #3ecf8e;
+    --accent-soft: rgba(62, 207, 142, 0.14);
+    --accent-text: #06231a;
+    --danger: #f87171;
+    --warn: #fbbf24;
+    --warn-soft: rgba(251, 191, 36, 0.14);
+    --shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0d0f13;
+  --surface: #181b21;
+  --surface-alt: #21252d;
+  --text: #eef0f3;
+  --text-muted: #9aa1ac;
+  --border: #2a2e37;
+  --accent: #3ecf8e;
+  --accent-soft: rgba(62, 207, 142, 0.14);
+  --accent-text: #06231a;
+  --danger: #f87171;
+  --warn: #fbbf24;
+  --warn-soft: rgba(251, 191, 36, 0.14);
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+* { box-sizing: border-box; }
+
+/* Figures that sit in a column — costs, totals, protein — line up only with
+   tabular figures, and this app is mostly columns of numbers. */
+.stat-value, .meal-cost, .shop-cost, .day-meta, .card-sub, .ing-amt,
+.total-bar, .week-range {
+  font-variant-numeric: tabular-nums;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+body { padding-bottom: env(safe-area-inset-bottom); }
+
+#app {
+  max-width: 560px;
+  margin: 0 auto;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+button, input, select, textarea { font-family: inherit; }
+
+/* Keyboard focus must stay visible everywhere, including on the tinted
+   surfaces where a default outline disappears. */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .btn:active { transform: none; }
+}
+
+/* ---------- Topbar ---------- */
+.topbar {
+  padding: calc(env(safe-area-inset-top) + 14px) 16px 12px;
+  font-weight: 700;
+  font-size: 1.1rem;
+  position: sticky;
+  top: 0;
+  background: var(--bg);
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.view-root {
+  flex: 1;
+  padding: 4px 16px 96px;
+}
+
+.section-title {
+  font-size: 1.25rem;
+  font-weight: 800;
+  margin: 14px 0 10px;
+}
+
+.section-note {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  line-height: 1.5;
+  margin: -4px 0 12px;
+}
+
+/* ---------- Week nav ---------- */
+.week-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.week-range { font-weight: 600; color: var(--text-muted); font-size: 0.9rem; }
+
+/* ---------- Cards ---------- */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 14px;
+  margin-bottom: 12px;
+}
+
+.card-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.card-title { font-weight: 700; font-size: 1rem; }
+.card-sub { color: var(--text-muted); font-size: 0.8rem; }
+
+/* ---------- Headline numbers ---------- */
+.stat-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.stat {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 10px;
+  text-align: center;
+  box-shadow: var(--shadow);
+}
+
+.stat-value { font-size: 1.35rem; font-weight: 800; line-height: 1.15; }
+.stat-label { font-size: 0.68rem; color: var(--text-muted); margin-top: 3px; letter-spacing: 0.02em; }
+.stat.good .stat-value { color: var(--success); }
+.stat.over .stat-value { color: var(--danger); }
+
+.meter {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--surface-alt);
+  overflow: hidden;
+  margin-top: 8px;
+}
+
+.meter-fill { height: 100%; background: var(--accent); border-radius: 999px; }
+.meter-fill.over { background: var(--danger); }
+
+/* ---------- Day cards ---------- */
+.day-card { padding: 0; overflow: hidden; }
+
+.day-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 11px 14px;
+  background: var(--surface-alt);
+  font-weight: 700;
+  font-size: 0.92rem;
+}
+
+.day-head .day-meta { font-weight: 500; color: var(--text-muted); font-size: 0.76rem; }
+
+.meal-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 11px 14px;
+  background: none;
+  border: none;
+  border-top: 1px solid var(--border);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.meal-row:active { background: var(--surface-alt); }
+.meal-icon { font-size: 1.05rem; width: 22px; text-align: center; flex: none; }
+.meal-main { flex: 1; min-width: 0; }
+.meal-name { font-weight: 600; }
+.meal-name.empty { color: var(--text-muted); font-weight: 500; font-style: italic; }
+.meal-sub { color: var(--text-muted); font-size: 0.74rem; margin-top: 2px; }
+.meal-cost { font-weight: 700; font-size: 0.85rem; white-space: nowrap; }
+
+/* ---------- Shopping list ---------- */
+.shop-group-title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin: 16px 2px 6px;
+}
+
+.shop-line {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 10px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  margin-bottom: 7px;
+}
+
+.shop-line.done { opacity: 0.45; }
+.shop-line.done .shop-name { text-decoration: line-through; }
+
+.tickbox {
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+  border: 2px solid var(--border);
+  background: none;
+  flex: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent-text);
+  font-size: 0.8rem;
+  padding: 0;
+}
+
+.tickbox.on { background: var(--accent); border-color: var(--accent); }
+
+.shop-main { flex: 1; min-width: 0; }
+.shop-name { font-weight: 600; font-size: 0.9rem; }
+.shop-sub { color: var(--text-muted); font-size: 0.74rem; margin-top: 2px; }
+.shop-cost { font-weight: 700; font-size: 0.88rem; white-space: nowrap; }
+
+.badge {
+  display: inline-block;
+  font-size: 0.64rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 999px;
+  vertical-align: middle;
+  margin-left: 6px;
+  letter-spacing: 0.02em;
+}
+
+.badge.estimate { background: var(--warn-soft); color: var(--warn); }
+.badge.confirmed { background: var(--accent-soft); color: var(--accent); }
+.badge.batch { background: var(--accent-soft); color: var(--accent); }
+.badge.fresh { background: var(--surface-alt); color: var(--text-muted); }
+
+.total-bar {
+  position: sticky;
+  bottom: calc(64px + env(safe-area-inset-bottom));
+  background: var(--accent);
+  color: var(--accent-text);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 800;
+  margin-top: 14px;
+  box-shadow: var(--shadow);
+  z-index: 4;
+}
+
+.total-bar .total-sub { font-size: 0.72rem; font-weight: 600; opacity: 0.85; }
+
+/* ---------- Notices ---------- */
+.notice {
+  border-radius: var(--radius);
+  padding: 11px 14px;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  margin-bottom: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface-alt);
+  color: var(--text-muted);
+}
+
+.notice.warn {
+  background: var(--warn-soft);
+  border-color: transparent;
+  color: var(--warn);
+  font-weight: 600;
+}
+
+.notice strong { color: inherit; }
+
+/* ---------- Buttons ---------- */
+.btn {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  border-radius: 11px;
+  padding: 10px 14px;
+  font-size: 0.86rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn:active { transform: translateY(1px); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
+.btn.danger { color: var(--danger); }
+.btn.small { padding: 6px 10px; font-size: 0.78rem; border-radius: 9px; }
+.btn.block { width: 100%; }
+.btn.ghost { background: none; }
+
+.btn-row { display: flex; gap: 8px; margin-bottom: 12px; }
+.btn-row .btn { flex: 1; }
+
+/* ---------- Forms ---------- */
+.field { margin-bottom: 12px; }
+.field label { display: block; font-size: 0.78rem; font-weight: 600; color: var(--text-muted); margin-bottom: 5px; }
+
+.field input, .field select, .field textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 11px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 1rem;
+}
+
+.field-hint { font-size: 0.72rem; color: var(--text-muted); margin-top: 5px; line-height: 1.45; }
+.field-pair { display: flex; gap: 8px; }
+.field-pair .field { flex: 1; }
+
+.switch-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.switch-row:last-child { border-bottom: none; }
+.switch-row .switch-label { font-size: 0.88rem; font-weight: 600; }
+.switch-row .switch-sub { font-size: 0.72rem; color: var(--text-muted); margin-top: 2px; }
+
+.chip-row { display: flex; flex-wrap: wrap; gap: 7px; }
+
+.chip {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-muted);
+  border-radius: 999px;
+  padding: 7px 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.chip.on { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
+
+/* ---------- Cook sessions ---------- */
+.cook-step {
+  display: flex;
+  gap: 10px;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  margin-bottom: 7px;
+  color: var(--text-muted);
+}
+
+.cook-step .num {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: var(--surface-alt);
+  color: var(--text);
+  font-size: 0.7rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 1px;
+}
+
+.ing-line {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 0.84rem;
+  padding: 5px 0;
+  border-bottom: 1px dashed var(--border);
+}
+
+.ing-line:last-child { border-bottom: none; }
+.ing-line .ing-amt { color: var(--text-muted); white-space: nowrap; }
+
+/* ---------- Modal ---------- */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 20;
+}
+
+.modal {
+  background: var(--surface);
+  width: 100%;
+  max-width: 560px;
+  max-height: 88vh;
+  overflow-y: auto;
+  border-radius: 20px 20px 0 0;
+  padding: 18px 16px calc(20px + env(safe-area-inset-bottom));
+}
+
+.modal-title { font-size: 1.05rem; font-weight: 800; margin-bottom: 12px; }
+
+.option-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  margin-bottom: 7px;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.option-row.on { border-color: var(--accent); background: var(--accent-soft); }
+.option-main { flex: 1; min-width: 0; }
+.option-name { font-weight: 600; font-size: 0.9rem; }
+.option-sub { color: var(--text-muted); font-size: 0.74rem; margin-top: 2px; }
+
+/* ---------- Tabbar ---------- */
+.tabbar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  max-width: 560px;
+  margin: 0 auto;
+  display: flex;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  padding-bottom: env(safe-area-inset-bottom);
+  z-index: 10;
+}
+
+.tab-btn {
+  flex: 1;
+  background: none;
+  border: none;
+  padding: 8px 2px 10px;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.tab-btn.active { color: var(--accent); }
+.tab-icon { font-size: 1.15rem; }
+.tab-label { font-size: 0.66rem; font-weight: 600; }
+
+/* ---------- Toast ---------- */
+.toast-root {
+  position: fixed;
+  bottom: calc(78px + env(safe-area-inset-bottom));
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  pointer-events: none;
+  z-index: 30;
+}
+
+.toast {
+  background: var(--text);
+  color: var(--bg);
+  padding: 9px 16px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  box-shadow: var(--shadow);
+}
+
+.empty-state {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  line-height: 1.55;
+  padding: 30px 20px;
+}
+</style>
+
+<div id="app">
+  <header class="topbar">
+    <span id="topbar-title">🥘 This week</span>
+  </header>
+
+  <main id="view-root" class="view-root"></main>
+
+  <nav class="tabbar">
+    <button class="tab-btn active" data-action="switch-tab" data-tab="week">
+      <span class="tab-icon">🗓️</span><span class="tab-label">Week</span>
+    </button>
+    <button class="tab-btn" data-action="switch-tab" data-tab="shop">
+      <span class="tab-icon">🛒</span><span class="tab-label">Shop</span>
+    </button>
+    <button class="tab-btn" data-action="switch-tab" data-tab="cook">
+      <span class="tab-icon">👨‍🍳</span><span class="tab-label">Cook</span>
+    </button>
+    <button class="tab-btn" data-action="switch-tab" data-tab="prices">
+      <span class="tab-icon">🏷️</span><span class="tab-label">Prices</span>
+    </button>
+    <button class="tab-btn" data-action="switch-tab" data-tab="more">
+      <span class="tab-icon">⚙️</span><span class="tab-label">More</span>
+    </button>
+  </nav>
+
+  <div id="modal-root"></div>
+  <div id="toast-root" class="toast-root"></div>
+</div>
+
+<script type="module">
+// ---------- js/utils.js ----------
+const __utils = (() => {
+// Date, money and small DOM helpers shared across modules.
+
+const DAY_KEYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+const DAY_LABELS = {
+  monday: 'Monday', tuesday: 'Tuesday', wednesday: 'Wednesday', thursday: 'Thursday',
+  friday: 'Friday', saturday: 'Saturday', sunday: 'Sunday',
+};
+const DAY_SHORT = {
+  monday: 'Mon', tuesday: 'Tue', wednesday: 'Wed', thursday: 'Thu',
+  friday: 'Fri', saturday: 'Sat', sunday: 'Sun',
+};
+
+const SLOT_KEYS = ['breakfast', 'lunch', 'dinner', 'snack', 'snack2'];
+const SLOT_LABELS = {
+  breakfast: 'Breakfast', lunch: 'Lunch', dinner: 'Dinner',
+  snack: 'Snack', snack2: 'Second snack',
+};
+const SLOT_ICONS = {
+  breakfast: '🌅', lunch: '🥗', dinner: '🍽️', snack: '🍌', snack2: '🥜',
+};
+
+// Both snack slots eat from the same pool of snack recipes.
+function baseSlot(slot) {
+  return slot === 'snack2' ? 'snack' : slot;
+}
+
+// JS getDay(): 0=Sun..6=Sat. Our week starts Monday.
+function dayKeyFor(date) {
+  return DAY_KEYS[(date.getDay() + 6) % 7];
+}
+
+function isoDate(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+function parseIsoDate(iso) {
+  const [y, m, d] = iso.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
+function stripTime(date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+function addDays(date, n) {
+  const d = new Date(date);
+  d.setDate(d.getDate() + n);
+  return d;
+}
+
+function startOfWeek(date) {
+  const idx = (date.getDay() + 6) % 7; // 0=Mon
+  return addDays(stripTime(date), -idx);
+}
+
+function formatWeekRange(weekStart) {
+  const end = addDays(weekStart, 6);
+  const sameMonth = weekStart.getMonth() === end.getMonth();
+  const startStr = weekStart.toLocaleDateString(undefined, { day: 'numeric', month: sameMonth ? undefined : 'short' });
+  const endStr = end.toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+  return `${startStr} – ${endStr}`;
+}
+
+// £4.5 -> "£4.50", £0.4 -> "£0.40". Keeps pence honest; the whole app is
+// arithmetic on prices so rounding only ever happens at display time.
+function money(n) {
+  const v = Number.isFinite(n) ? n : 0;
+  return `£${v.toFixed(2)}`;
+}
+
+// Quantities read better without trailing noise: 87.5g -> "88g", 0.5 -> "½".
+function qty(n, unit) {
+  if (unit === 'unit') {
+    const rounded = Math.round(n * 100) / 100;
+    if (Math.abs(rounded - 0.5) < 0.01) return '½';
+    if (Math.abs(rounded - 0.25) < 0.01) return '¼';
+    return String(rounded % 1 === 0 ? rounded : rounded.toFixed(2).replace(/0$/, ''));
+  }
+  if (n >= 1000) return `${(n / 1000).toFixed(n % 1000 === 0 ? 0 : 2)}${unit === 'ml' ? 'L' : 'kg'}`;
+  return `${Math.round(n)}${unit}`;
+}
+
+function unitNoun(ing, amount) {
+  if (ing.unit !== 'unit') return '';
+  const n = ing.unitNoun || 'x';
+  return amount === 1 ? n : `${n}s`;
+}
+
+// "750g" for weighed things, "7 bananas" for things sold by the item.
+function amountLabel(ing, amount) {
+  if (!ing) return '';
+  if (ing.unit === 'unit') return `${qty(amount, 'unit')} ${unitNoun(ing, amount)}`.trim();
+  return qty(amount, ing.unit);
+}
+
+function escapeHtml(str) {
+  if (str == null) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function clamp(n, min, max) {
+  return Math.max(min, Math.min(max, n));
+}
+
+function uid() {
+  return Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+}
+
+function qs(sel, root = document) {
+  return root.querySelector(sel);
+}
+
+function qsa(sel, root = document) {
+  return Array.from(root.querySelectorAll(sel));
+}
+
+// Deterministic shuffle so "regenerate" gives a different plan each tap but the
+// same plan if you reopen the app without regenerating.
+function seededShuffle(arr, seed) {
+  const out = arr.slice();
+  let s = seed || 1;
+  for (let i = out.length - 1; i > 0; i--) {
+    s = (s * 1103515245 + 12345) % 2147483648;
+    const j = Math.abs(s) % (i + 1);
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
+
+return { baseSlot, dayKeyFor, isoDate, parseIsoDate, stripTime, addDays, startOfWeek, formatWeekRange, money, qty, unitNoun, amountLabel, escapeHtml, clamp, uid, qs, qsa, seededShuffle, DAY_KEYS, DAY_LABELS, DAY_SHORT, SLOT_KEYS, SLOT_LABELS, SLOT_ICONS };
+})();
+
+// ---------- js/seed.js ----------
+const __seed = (() => {
+// Starting ingredient prices and recipes.
+//
+// PRICES ARE ESTIMATES. They're typical UK supermarket own-brand prices, put
+// here so the app does something useful the first time it's opened. Every one
+// of them is meant to be overwritten with the real price from the shop — the
+// Prices tab flags which ones you've never confirmed.
+//
+// Nutrition is per 100g / 100ml, except for items sold by the unit (eggs,
+// bananas, wraps…) where it's per item. Dry goods (rice, pasta, oats, lentils)
+// are dry weight throughout — recipes say "dry" so there's no ambiguity.
+
+const CATEGORIES = [
+  { key: 'meat-fish', label: 'Meat & fish', icon: '🥩' },
+  { key: 'dairy-eggs', label: 'Dairy & eggs', icon: '🥚' },
+  { key: 'fruit-veg', label: 'Fruit & veg', icon: '🥦' },
+  { key: 'frozen', label: 'Frozen', icon: '🧊' },
+  { key: 'bakery', label: 'Bakery', icon: '🍞' },
+  { key: 'cupboard', label: 'Cupboard', icon: '🥫' },
+];
+
+// staple: true means "a bottle of oil lasts months" — these get their own
+// section in the shopping list so a single week isn't charged for the lot.
+function seedIngredients() {
+  return [
+    // ---------- Meat & fish ----------
+    ing('chicken-breast-frozen', 'Chicken breast fillets (frozen)', 'meat-fish', 5.75, 1000, 'g', 23.0, 106),
+    ing('chicken-breast-fresh', 'Chicken breast fillets (fresh)', 'meat-fish', 5.20, 650, 'g', 23.0, 106),
+    ing('chicken-thigh', 'Chicken thighs, boneless skinless', 'meat-fish', 5.50, 1000, 'g', 18.5, 145),
+    ing('beef-mince-5', 'Beef mince, 5% fat', 'meat-fish', 4.40, 500, 'g', 21.0, 129),
+    ing('beef-mince-20', 'Beef mince, 20% fat', 'meat-fish', 3.30, 500, 'g', 18.0, 221),
+    ing('turkey-mince', 'Turkey mince, 5% fat', 'meat-fish', 4.00, 500, 'g', 22.0, 122),
+    ing('pork-mince', 'Pork mince', 'meat-fish', 3.00, 500, 'g', 20.0, 204),
+    ing('sausages', 'Pork sausages', 'meat-fish', 2.50, 454, 'g', 12.0, 250),
+    ing('bacon-medallions', 'Bacon medallions', 'meat-fish', 2.50, 200, 'g', 22.0, 120),
+    ing('ham', 'Cooked ham slices', 'meat-fish', 2.75, 400, 'g', 18.0, 105),
+    ing('tuna-tinned', 'Tuna, tinned in water (drained wt)', 'meat-fish', 4.00, 416, 'g', 26.0, 108),
+    ing('white-fish-frozen', 'White fish fillets (frozen)', 'frozen', 3.50, 500, 'g', 17.0, 90),
+    ing('salmon-frozen', 'Salmon fillets (frozen)', 'frozen', 6.50, 440, 'g', 20.0, 180),
+
+    // ---------- Dairy & eggs ----------
+    ing('eggs', 'Eggs, large', 'dairy-eggs', 3.20, 15, 'unit', 6.4, 72, { unitNoun: 'egg' }),
+    ing('greek-yoghurt', 'Greek style yoghurt, 0% fat', 'dairy-eggs', 2.25, 1000, 'g', 9.0, 57),
+    ing('cottage-cheese', 'Cottage cheese', 'dairy-eggs', 1.30, 300, 'g', 11.0, 78),
+    ing('cheddar', 'Mature cheddar', 'dairy-eggs', 3.50, 400, 'g', 25.0, 416),
+    ing('milk', 'Semi-skimmed milk', 'dairy-eggs', 1.45, 2000, 'ml', 3.6, 50),
+
+    // ---------- Fruit & veg ----------
+    ing('onions', 'Onions', 'fruit-veg', 1.15, 1000, 'g', 1.2, 40),
+    ing('garlic', 'Garlic bulbs', 'fruit-veg', 1.00, 3, 'unit', 0.6, 15, { unitNoun: 'bulb', staple: true }),
+    ing('carrots', 'Carrots', 'fruit-veg', 0.75, 1000, 'g', 0.9, 41),
+    ing('potatoes', 'White potatoes', 'fruit-veg', 2.20, 2500, 'g', 1.8, 79),
+    ing('sweet-potato', 'Sweet potatoes', 'fruit-veg', 1.60, 1000, 'g', 1.6, 86),
+    ing('broccoli', 'Broccoli', 'fruit-veg', 0.75, 350, 'g', 2.8, 34),
+    ing('peppers', 'Mixed peppers', 'fruit-veg', 1.75, 3, 'unit', 1.8, 46, { unitNoun: 'pepper' }),
+    ing('courgette', 'Courgettes', 'fruit-veg', 1.10, 2, 'unit', 3.0, 33, { unitNoun: 'courgette' }),
+    ing('mushrooms', 'Mushrooms', 'fruit-veg', 0.95, 300, 'g', 3.1, 22),
+    ing('salad-leaves', 'Spinach & salad leaves', 'fruit-veg', 1.00, 200, 'g', 2.9, 25),
+    ing('bananas', 'Bananas', 'fruit-veg', 0.95, 6, 'unit', 1.3, 105, { unitNoun: 'banana' }),
+    ing('apples', 'Apples', 'fruit-veg', 1.50, 6, 'unit', 0.3, 95, { unitNoun: 'apple' }),
+
+    // ---------- Frozen ----------
+    ing('frozen-mixed-veg', 'Frozen mixed vegetables', 'frozen', 1.50, 1000, 'g', 3.0, 55),
+    ing('frozen-peas', 'Frozen peas', 'frozen', 1.40, 1000, 'g', 5.4, 81),
+    ing('frozen-spinach', 'Frozen spinach', 'frozen', 1.75, 1000, 'g', 3.0, 30),
+    ing('frozen-stirfry', 'Frozen stir-fry vegetables', 'frozen', 1.60, 750, 'g', 2.0, 40),
+    ing('frozen-berries', 'Frozen mixed berries', 'frozen', 2.25, 500, 'g', 1.0, 50),
+
+    // ---------- Bakery ----------
+    ing('bread', 'Wholemeal bread', 'bakery', 1.30, 800, 'g', 10.0, 235),
+    ing('wraps', 'Tortilla wraps', 'bakery', 1.20, 8, 'unit', 6.0, 160, { unitNoun: 'wrap' }),
+
+    // ---------- Cupboard ----------
+    ing('oats', 'Rolled oats', 'cupboard', 1.30, 1000, 'g', 11.0, 372),
+    ing('rice-white', 'Long grain white rice (dry)', 'cupboard', 2.50, 2000, 'g', 7.0, 349),
+    ing('rice-brown', 'Brown rice (dry)', 'cupboard', 1.80, 1000, 'g', 8.0, 350),
+    ing('pasta', 'Pasta (dry)', 'cupboard', 1.10, 1000, 'g', 12.0, 350),
+    ing('pasta-wholemeal', 'Wholemeal pasta (dry)', 'cupboard', 0.95, 500, 'g', 13.0, 330),
+    ing('couscous', 'Couscous (dry)', 'cupboard', 1.10, 500, 'g', 13.0, 350),
+    ing('noodles', 'Egg noodles (dry)', 'cupboard', 1.30, 375, 'g', 12.0, 350),
+    ing('lentils', 'Red lentils (dry)', 'cupboard', 1.30, 500, 'g', 24.0, 353),
+    ing('chickpeas', 'Chickpeas, tinned (drained wt)', 'cupboard', 0.55, 240, 'g', 7.2, 119),
+    ing('kidney-beans', 'Kidney beans, tinned (drained wt)', 'cupboard', 0.55, 235, 'g', 7.0, 110),
+    ing('black-beans', 'Black beans, tinned (drained wt)', 'cupboard', 0.85, 235, 'g', 7.0, 114),
+    ing('baked-beans', 'Baked beans', 'cupboard', 0.45, 415, 'g', 4.7, 89),
+    ing('chopped-tomatoes', 'Chopped tomatoes, tinned', 'cupboard', 0.45, 400, 'g', 1.3, 30),
+    ing('tomato-puree', 'Tomato purée', 'cupboard', 0.60, 200, 'g', 4.5, 80, { staple: true }),
+    ing('peanut-butter', 'Peanut butter', 'cupboard', 1.60, 340, 'g', 27.0, 600),
+    ing('tofu', 'Firm tofu', 'cupboard', 2.00, 396, 'g', 14.0, 120),
+    ing('whey', 'Whey protein powder', 'cupboard', 18.00, 1000, 'g', 78.0, 390, { staple: true }),
+    ing('honey', 'Honey', 'cupboard', 1.75, 340, 'g', 0.3, 300, { staple: true }),
+    ing('olive-oil', 'Olive oil', 'cupboard', 3.75, 500, 'ml', 0, 884, { staple: true }),
+    ing('veg-oil', 'Vegetable oil', 'cupboard', 2.20, 1000, 'ml', 0, 884, { staple: true }),
+    ing('soy-sauce', 'Soy sauce', 'cupboard', 1.10, 150, 'ml', 6.0, 60, { staple: true }),
+    ing('stock-cubes', 'Stock cubes', 'cupboard', 0.70, 10, 'unit', 0.5, 20, { unitNoun: 'cube', staple: true }),
+    ing('mixed-herbs', 'Mixed dried herbs', 'cupboard', 0.85, 12, 'g', 0, 250, { staple: true }),
+    ing('paprika', 'Paprika', 'cupboard', 0.90, 45, 'g', 0, 280, { staple: true }),
+    ing('curry-powder', 'Curry powder', 'cupboard', 1.00, 90, 'g', 0, 325, { staple: true }),
+    ing('chilli-flakes', 'Chilli flakes', 'cupboard', 0.90, 33, 'g', 0, 280, { staple: true }),
+    ing('salt', 'Salt', 'cupboard', 0.65, 750, 'g', 0, 0, { staple: true }),
+  ];
+}
+
+function ing(id, name, category, packPrice, packQty, unit, protein, kcal, extra = {}) {
+  return {
+    id,
+    name,
+    category,
+    packPrice,
+    packQty,
+    unit,
+    protein,
+    kcal,
+    unitNoun: extra.unitNoun || 'x',
+    staple: !!extra.staple,
+    confirmedAt: null, // set when you overwrite the estimate with a real price
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Recipes. Quantities are per single portion, so the planner can scale a
+// recipe to however many portions a cook session needs.
+//
+// mode: 'batch' cooks once and reheats; 'assemble' is thrown together in a
+//   couple of minutes on the day (yoghurt, shakes, toast).
+// keeps: how many days a cooked portion is good for in the fridge — the Cook
+//   tab uses it to tell you which portions to freeze.
+// ---------------------------------------------------------------------------
+function seedRecipes() {
+  return [
+    // ---------- Breakfast ----------
+    rec('overnight-oats', 'Protein overnight oats', 'breakfast', 'assemble', 5, 3, [
+      ['oats', 80], ['greek-yoghurt', 150], ['milk', 100], ['bananas', 1], ['peanut-butter', 15],
+    ], [
+      'Stir the oats, yoghurt and milk together in a tub or jar.',
+      'Swirl the peanut butter through and slice the banana on top.',
+      'Lid on, fridge overnight. Make three or four at once — they keep three days.',
+    ]),
+    rec('scrambled-eggs-toast', 'Big scrambled eggs on toast', 'breakfast', 'assemble', 10, 0, [
+      ['eggs', 3], ['bread', 80], ['milk', 20], ['veg-oil', 5],
+    ], [
+      'Beat the eggs with the milk and a pinch of salt.',
+      'Low heat, keep them moving, pull them off while still slightly wet.',
+      'Two slices of toast underneath.',
+    ]),
+    rec('bacon-egg-wrap', 'Bacon & egg wrap', 'breakfast', 'assemble', 10, 0, [
+      ['wraps', 1], ['bacon-medallions', 60], ['eggs', 2],
+    ], [
+      'Grill the bacon medallions, fry or scramble the eggs.',
+      'Pile into the wrap, fold, done.',
+    ]),
+    rec('yoghurt-berry-bowl', 'Greek yoghurt, berries & oats', 'breakfast', 'assemble', 3, 0, [
+      ['greek-yoghurt', 200], ['frozen-berries', 80], ['oats', 40], ['honey', 10],
+    ], [
+      'Berries out of the freezer the night before, or microwave 40 seconds.',
+      'Yoghurt, oats, berries, drizzle of honey.',
+    ]),
+
+    // ---------- Lunch ----------
+    rec('chicken-rice-box', 'Chicken & rice box', 'lunch', 'batch', 30, 4, [
+      ['chicken-breast-frozen', 180], ['rice-white', 90], ['frozen-mixed-veg', 150],
+      ['soy-sauce', 10], ['veg-oil', 8], ['paprika', 2],
+    ], [
+      'Rice on: 90g dry per portion, double the water, 10 minutes, lid on, off the heat 5 more.',
+      'Chicken diced and fried with the paprika until coloured through, 8–10 minutes.',
+      'Veg straight from frozen into the pan for the last 4 minutes, then the soy sauce.',
+      'Split between tubs, rice at the bottom, cool before the lids go on.',
+    ]),
+    rec('turkey-chilli', 'Turkey chilli with rice', 'lunch', 'batch', 40, 4, [
+      ['turkey-mince', 150], ['kidney-beans', 120], ['chopped-tomatoes', 200], ['onions', 60],
+      ['rice-white', 80], ['tomato-puree', 15], ['chilli-flakes', 1], ['stock-cubes', 0.5], ['veg-oil', 8],
+    ], [
+      'Onion soft in the oil, then the mince until no pink left.',
+      'Purée, chilli flakes, tinned tomatoes, drained beans, crumbled stock cube.',
+      'Simmer 20–25 minutes until it thickens. Freezes well.',
+      'Cook the rice fresh or batch it alongside.',
+    ]),
+    rec('tuna-pasta-salad', 'Tuna pasta salad', 'lunch', 'batch', 15, 3, [
+      ['tuna-tinned', 104], ['pasta', 100], ['frozen-peas', 80], ['greek-yoghurt', 40], ['salad-leaves', 30],
+    ], [
+      'Pasta on, peas thrown in for the last 2 minutes.',
+      'Drain, cool under the tap so it does not go claggy.',
+      'Fold through the tuna, yoghurt and leaves. Keeps three days.',
+    ]),
+    rec('lentil-chickpea-curry', 'Lentil & chickpea curry', 'lunch', 'batch', 35, 4, [
+      ['lentils', 80], ['chickpeas', 120], ['chopped-tomatoes', 200], ['onions', 60],
+      ['curry-powder', 5], ['rice-white', 80], ['veg-oil', 8], ['stock-cubes', 0.5],
+    ], [
+      'Onion in the oil, curry powder in for a minute until it smells like something.',
+      'Lentils, tomatoes, drained chickpeas, stock cube, 400ml water.',
+      'Simmer 25 minutes until the lentils collapse. Cheapest protein in the whole plan.',
+    ]),
+    rec('chicken-couscous-box', 'Chicken & couscous box', 'lunch', 'batch', 25, 4, [
+      ['chicken-thigh', 180], ['couscous', 80], ['peppers', 0.5], ['courgette', 0.5],
+      ['olive-oil', 10], ['paprika', 3], ['stock-cubes', 0.5],
+    ], [
+      'Thighs and chopped veg on a tray with the oil and paprika, 200°C for 22 minutes.',
+      'Couscous in a bowl, stock cube dissolved in boiling water over it, cover for 5 minutes, fork through.',
+      'Everything into tubs.',
+    ]),
+
+    // ---------- Dinner ----------
+    rec('bolognese', 'Beef bolognese with pasta', 'dinner', 'batch', 40, 4, [
+      ['beef-mince-5', 150], ['chopped-tomatoes', 200], ['onions', 60], ['carrots', 60],
+      ['tomato-puree', 15], ['pasta', 100], ['mixed-herbs', 2], ['stock-cubes', 0.5], ['veg-oil', 8],
+    ], [
+      'Onion and grated carrot soft in the oil, then brown the mince hard.',
+      'Purée, herbs, tomatoes, stock cube, splash of water.',
+      'Simmer 25 minutes minimum. Sauce batches and freezes; cook pasta fresh each night.',
+    ]),
+    rec('chicken-traybake', 'Chicken thigh traybake', 'dinner', 'batch', 45, 3, [
+      ['chicken-thigh', 200], ['potatoes', 300], ['peppers', 0.5], ['onions', 60],
+      ['olive-oil', 12], ['paprika', 3],
+    ], [
+      'Potatoes chopped small, everything on one tray, oil and paprika, toss.',
+      '200°C for 40 minutes, shake the tray halfway.',
+      'One tray does three or four portions with no washing up.',
+    ]),
+    rec('cottage-pie', 'Cottage pie', 'dinner', 'batch', 55, 4, [
+      ['beef-mince-20', 150], ['potatoes', 300], ['carrots', 80], ['frozen-peas', 80],
+      ['onions', 60], ['stock-cubes', 0.5], ['milk', 30], ['tomato-puree', 10],
+    ], [
+      'Potatoes on to boil. Mince browned with the onion and diced carrot.',
+      'Purée, stock cube, water, simmer 15 minutes, peas in at the end.',
+      'Mash with the milk, spread over, 200°C for 20 minutes until the top catches.',
+      'Portion straight out of the dish into tubs.',
+    ]),
+    rec('fish-potatoes-peas', 'Fish, potatoes & peas', 'dinner', 'assemble', 30, 2, [
+      ['white-fish-frozen', 150], ['potatoes', 300], ['frozen-peas', 100], ['veg-oil', 8],
+    ], [
+      'Fish from frozen onto a tray, 200°C for 22 minutes.',
+      'Potatoes in wedges on the same tray with the oil.',
+      'Peas in the last 3 minutes in a pan. Best cooked fresh, not batched.',
+    ]),
+    rec('chicken-stir-fry', 'Chicken stir fry with noodles', 'dinner', 'assemble', 20, 2, [
+      ['chicken-breast-frozen', 180], ['frozen-stirfry', 200], ['noodles', 90],
+      ['soy-sauce', 15], ['veg-oil', 8], ['garlic', 0.15],
+    ], [
+      'Noodles in boiling water while the pan gets properly hot.',
+      'Chicken strips first, 5 minutes, then garlic, then the frozen veg.',
+      'Drained noodles and soy sauce in at the end, toss hard for a minute.',
+    ]),
+    rec('sausage-bean-casserole', 'Sausage & bean casserole', 'dinner', 'batch', 35, 4, [
+      ['sausages', 150], ['baked-beans', 200], ['chopped-tomatoes', 200], ['onions', 60], ['bread', 60],
+    ], [
+      'Sausages browned and cut into chunks.',
+      'Onion in the same pan, then the tomatoes and beans.',
+      'Simmer 20 minutes. Bread on the side to mop it up.',
+    ]),
+    rec('tofu-veg-curry', 'Tofu & veg curry with rice', 'dinner', 'batch', 30, 4, [
+      ['tofu', 150], ['frozen-mixed-veg', 200], ['chopped-tomatoes', 200],
+      ['curry-powder', 5], ['rice-white', 80], ['veg-oil', 8], ['onions', 50],
+    ], [
+      'Press the tofu between two plates for 10 minutes, cube, fry until golden. Do not rush this bit.',
+      'Set it aside, onion and curry powder in the pan, then tomatoes and frozen veg.',
+      'Simmer 15 minutes, tofu back in at the end so it stays firm.',
+    ]),
+    rec('salmon-rice-broccoli', 'Salmon, rice & broccoli', 'dinner', 'assemble', 25, 2, [
+      ['salmon-frozen', 110], ['rice-white', 90], ['broccoli', 120], ['olive-oil', 6], ['soy-sauce', 10],
+    ], [
+      'Salmon from frozen, 200°C for 25 minutes.',
+      'Rice on, broccoli steamed over it for the last 5 minutes.',
+      'Oil and soy over the lot. The expensive one — the planner only picks it if there is room in the budget.',
+    ]),
+
+    // ---------- Snack ----------
+    rec('yoghurt-honey', 'Greek yoghurt & honey', 'snack', 'assemble', 2, 0, [
+      ['greek-yoghurt', 170], ['honey', 10],
+    ], ['Yoghurt in a tub, honey on top. That is the recipe.']),
+    rec('banana-pb', 'Banana & peanut butter', 'snack', 'assemble', 2, 0, [
+      ['bananas', 1], ['peanut-butter', 20],
+    ], ['Banana split lengthways, peanut butter along it.']),
+    rec('cottage-cheese-toast', 'Cottage cheese on toast', 'snack', 'assemble', 5, 0, [
+      ['cottage-cheese', 100], ['bread', 40],
+    ], ['Toast, cottage cheese, black pepper.']),
+    rec('boiled-eggs', 'Two boiled eggs', 'snack', 'batch', 10, 5, [
+      ['eggs', 2],
+    ], ['8 minutes in boiling water, then straight into cold.', 'Boil six at once on cook day, they keep all week in the shell.']),
+    rec('protein-shake', 'Protein shake', 'snack', 'assemble', 1, 0, [
+      ['whey', 30], ['milk', 250],
+    ], ['Shaker, milk first, then the powder, or it welds itself to the bottom.']),
+    rec('apple-cheese', 'Apple & cheese', 'snack', 'assemble', 2, 0, [
+      ['apples', 1], ['cheddar', 30],
+    ], ['Apple sliced, cheese cut into it.']),
+  ];
+}
+
+function rec(id, name, slot, mode, minutes, keeps, items, steps) {
+  return {
+    id,
+    name,
+    slot,
+    mode,
+    minutes,
+    keeps, // fridge days for a cooked portion; 0 = make it on the day
+    items: items.map(([ingredient, amount]) => ({ ingredient, amount })),
+    steps,
+    custom: false,
+  };
+}
+
+return { seedIngredients, seedRecipes, CATEGORIES };
+})();
+
+// ---------- js/costing.js ----------
+const __costing = (() => {
+// All the arithmetic: what a recipe costs, what a week needs, what you'll
+// actually hand over at the till.
+//
+// Two different numbers matter and the app shows both, because they answer
+// different questions:
+//
+//   Till total  — you can't buy 300g of a 500g pack. This rounds every
+//                 ingredient up to whole packs. It's what leaves your bank.
+//   Food used   — the value of what the week's meals actually eat. Lower than
+//                 the till total, because the rest of the pack is still in your
+//                 cupboard next week. This is the fair cost per meal.
+
+const {DAY_KEYS, SLOT_KEYS} = __utils;
+// Price per gram / per ml / per unit.
+function unitPrice(ing) {
+  if (!ing || !ing.packQty) return 0;
+  return ing.packPrice / ing.packQty;
+}
+
+function costOf(ing, amount) {
+  return unitPrice(ing) * amount;
+}
+
+// Nutrition is per 100g/100ml for weighed items, per item for unit items.
+function nutritionOf(ing, amount) {
+  if (!ing) return { protein: 0, kcal: 0 };
+  const factor = ing.unit === 'unit' ? amount : amount / 100;
+  return { protein: (ing.protein || 0) * factor, kcal: (ing.kcal || 0) * factor };
+}
+
+// Per single portion.
+function recipeStats(recipe, ingMap) {
+  let cost = 0;
+  let protein = 0;
+  let kcal = 0;
+  let missing = 0;
+  for (const item of recipe.items) {
+    const ing = ingMap.get(item.ingredient);
+    if (!ing) { missing++; continue; }
+    cost += costOf(ing, item.amount);
+    const n = nutritionOf(ing, item.amount);
+    protein += n.protein;
+    kcal += n.kcal;
+  }
+  return { cost, protein, kcal, missing };
+}
+
+// The number the planner optimises: grams of protein per pound spent.
+function proteinPerPound(recipe, ingMap) {
+  const { cost, protein } = recipeStats(recipe, ingMap);
+  if (cost <= 0) return protein > 0 ? Infinity : 0;
+  return protein / cost;
+}
+
+// Every meal in a week's plan, flattened. Skips empty slots.
+function planMeals(plan, recipeMap) {
+  const out = [];
+  if (!plan || !plan.meals) return out;
+  for (const dayKey of DAY_KEYS) {
+    const day = plan.meals[dayKey];
+    if (!day) continue;
+    for (const slot of SLOT_KEYS) {
+      const entry = day[slot];
+      if (!entry || !entry.recipe) continue;
+      const recipe = recipeMap.get(entry.recipe);
+      if (!recipe) continue;
+      out.push({ dayKey, slot, recipe, servings: entry.servings || 1 });
+    }
+  }
+  return out;
+}
+
+// ingredientId -> total amount needed across the week.
+function requirements(plan, recipeMap) {
+  const req = new Map();
+  for (const meal of planMeals(plan, recipeMap)) {
+    for (const item of meal.recipe.items) {
+      const amount = item.amount * meal.servings;
+      req.set(item.ingredient, (req.get(item.ingredient) || 0) + amount);
+    }
+  }
+  return req;
+}
+
+// The shopping list. `pantry` marks things already in the cupboard, which come
+// off the total but stay visible so you can untick them when they run out.
+function shoppingList(plan, recipeMap, ingMap, pantry = {}) {
+  const req = requirements(plan, recipeMap);
+  const lines = [];
+
+  for (const [ingId, required] of req.entries()) {
+    const ing = ingMap.get(ingId);
+    if (!ing) continue;
+    const have = !!pantry[ingId];
+    const packs = have ? 0 : Math.ceil(required / ing.packQty - 1e-9);
+    const packCost = packs * ing.packPrice;
+    const usedCost = costOf(ing, required);
+    lines.push({
+      id: ingId,
+      ing,
+      required,
+      packs,
+      packCost,
+      usedCost,
+      leftover: Math.max(0, packs * ing.packQty - required),
+      have,
+      staple: !!ing.staple,
+      estimate: !ing.confirmedAt,
+    });
+  }
+
+  lines.sort((a, b) => a.ing.name.localeCompare(b.ing.name));
+  return lines;
+}
+
+function summarise(plan, recipeMap, ingMap, pantry = {}) {
+  const lines = shoppingList(plan, recipeMap, ingMap, pantry);
+  const meals = planMeals(plan, recipeMap);
+
+  let tillTotal = 0;
+  let usedTotal = 0;
+  let stapleTotal = 0;
+  let estimatedLines = 0;
+
+  for (const line of lines) {
+    tillTotal += line.packCost;
+    usedTotal += line.usedCost;
+    if (line.staple && !line.have) stapleTotal += line.packCost;
+    if (line.estimate && line.packs > 0) estimatedLines++;
+  }
+
+  const perDay = {};
+  for (const dayKey of DAY_KEYS) perDay[dayKey] = { protein: 0, kcal: 0, cost: 0, meals: 0 };
+  let mealCount = 0;
+
+  for (const meal of meals) {
+    const stats = recipeStats(meal.recipe, ingMap);
+    const d = perDay[meal.dayKey];
+    d.protein += stats.protein * meal.servings;
+    d.kcal += stats.kcal * meal.servings;
+    d.cost += stats.cost * meal.servings;
+    d.meals += 1;
+    mealCount += meal.servings;
+  }
+
+  const daysWithFood = DAY_KEYS.filter((k) => perDay[k].meals > 0);
+  const avg = (pick) => (daysWithFood.length
+    ? daysWithFood.reduce((sum, k) => sum + perDay[k][pick], 0) / daysWithFood.length
+    : 0);
+
+  return {
+    lines,
+    meals,
+    mealCount,
+    tillTotal,
+    usedTotal,
+    stapleTotal,
+    leftoverValue: Math.max(0, tillTotal - usedTotal),
+    estimatedLines,
+    perDay,
+    avgProtein: avg('protein'),
+    avgKcal: avg('kcal'),
+    costPerMeal: mealCount ? usedTotal / mealCount : 0,
+    tillPerMeal: mealCount ? tillTotal / mealCount : 0,
+  };
+}
+
+// What still needs buying — used for the "£X left to buy" running total on the
+// shopping tab.
+function outstandingTotal(lines, bought = {}) {
+  return lines.reduce((sum, l) => (bought[l.id] || l.have ? sum : sum + l.packCost), 0);
+}
+
+return { unitPrice, costOf, nutritionOf, recipeStats, proteinPerPound, planMeals, requirements, shoppingList, summarise, outstandingTotal };
+})();
+
+// ---------- js/planner.js ----------
+const __planner = (() => {
+// Builds the week.
+//
+// The brief is "as cheap as possible, as much protein as possible, two cook
+// sessions". Those pull against each other, so this doesn't just sort by one
+// number — it builds a plan and then hill-climbs it: try every alternative in
+// every slot, keep whichever swap improves the score most, repeat until no
+// swap helps. Fast enough to be instant with a couple of dozen recipes.
+
+const {DAY_KEYS, SLOT_KEYS, baseSlot, seededShuffle} = __utils;
+const {recipeStats, summarise} = __costing;
+// Which cook session feeds a given day: the most recent cook day at or before
+// it, wrapping back to the last cook day of the week for early-week days.
+// Cooking Sun + Wed gives blocks of Sun/Mon/Tue and Wed/Thu/Fri/Sat.
+function cookBlocks(cookDays) {
+  const days = (cookDays && cookDays.length ? cookDays : ['sunday'])
+    .filter((d) => DAY_KEYS.includes(d))
+    .sort((a, b) => DAY_KEYS.indexOf(a) - DAY_KEYS.indexOf(b));
+  if (!days.length) days.push('sunday');
+
+  const blocks = new Map(days.map((d) => [d, []]));
+  const dayToBlock = {};
+
+  for (const dayKey of DAY_KEYS) {
+    const idx = DAY_KEYS.indexOf(dayKey);
+    let chosen = days[days.length - 1]; // wrap: cooked at the end of last week
+    for (const cookDay of days) {
+      if (DAY_KEYS.indexOf(cookDay) <= idx) chosen = cookDay;
+    }
+    blocks.get(chosen).push(dayKey);
+    dayToBlock[dayKey] = chosen;
+  }
+
+  return { order: days, blocks, dayToBlock };
+}
+
+// Days between cooking and eating — drives the "freeze this one" advice.
+function daysAfterCook(cookDay, dayKey) {
+  const c = DAY_KEYS.indexOf(cookDay);
+  const d = DAY_KEYS.indexOf(dayKey);
+  return d >= c ? d - c : d + 7 - c;
+}
+
+// Independent hill-climbs per generate. Six is enough to stop it settling for a
+// bad local optimum, and still finishes in well under a tenth of a second.
+const RESTARTS = 6;
+
+function candidatesFor(slot, recipes, ingMap) {
+  const want = baseSlot(slot);
+  return recipes
+    .filter((r) => r.slot === want)
+    .filter((r) => r.items.length && r.items.every((it) => ingMap.has(it.ingredient)));
+}
+
+// The two snack slots land on the same day, so they must not hold the same
+// recipe — two identical snacks in one day reads as a broken plan even when the
+// numbers work out. Returns the position whose choice this one has to differ
+// from, or null.
+function samedayTwin(key) {
+  if (key.startsWith('snack2:')) return `snack:${key.slice('snack2:'.length)}`;
+  if (key.startsWith('snack:')) return `snack2:${key.slice('snack:'.length)}`;
+  return null;
+}
+
+// Stable pseudo-random in [0, 1) from a seed and an index — no Math.random, so
+// a plan is reproducible from its seed.
+function noise(seed, i) {
+  const x = Math.sin((seed + 1) * 12.9898 + i * 78.233) * 43758.5453;
+  return x - Math.floor(x);
+}
+
+// Positions are the knobs the hill-climb turns: two breakfasts alternating
+// through the week, one lunch and two dinners per cook session, and two
+// alternating options for each snack slot that's switched on.
+function buildPositions(settings, blocks) {
+  const positions = [];
+  if (settings.slots.breakfast) {
+    positions.push({ kind: 'breakfast', slot: 'breakfast', key: 'breakfast:0' });
+    positions.push({ kind: 'breakfast', slot: 'breakfast', key: 'breakfast:1' });
+  }
+  for (const cookDay of blocks.order) {
+    if (settings.slots.lunch) positions.push({ kind: 'lunch', slot: 'lunch', key: `l:${cookDay}`, cookDay });
+    if (settings.slots.dinner) {
+      positions.push({ kind: 'dinner', slot: 'dinner', key: `d0:${cookDay}`, cookDay, idx: 0 });
+      positions.push({ kind: 'dinner', slot: 'dinner', key: `d1:${cookDay}`, cookDay, idx: 1 });
+    }
+  }
+  for (const slot of ['snack', 'snack2']) {
+    if (!settings.slots[slot]) continue;
+    positions.push({ kind: slot, slot, key: `${slot}:0` });
+    positions.push({ kind: slot, slot, key: `${slot}:1` });
+  }
+  return positions;
+}
+
+// choice: position key -> recipe id. Turns into the day/slot grid the rest of
+// the app reads.
+function assemble(choice, positions, settings, blocks) {
+  const meals = {};
+  const servings = Math.max(1, settings.servings || 1);
+  // Slots whose two options alternate day by day, so you're not eating the same
+  // breakfast or snack seven days running.
+  const alternating = {};
+  for (const slot of ['breakfast', 'snack', 'snack2']) {
+    alternating[slot] = positions.filter((p) => p.slot === slot).map((p) => p.key);
+  }
+
+  DAY_KEYS.forEach((dayKey, dayIdx) => {
+    const day = {};
+    const cookDay = blocks.dayToBlock[dayKey];
+    const posInBlock = blocks.blocks.get(cookDay).indexOf(dayKey);
+
+    for (const slot of ['breakfast', 'snack', 'snack2']) {
+      const keys = alternating[slot];
+      if (!keys.length) continue;
+      const id = choice[keys[dayIdx % keys.length]];
+      if (id) day[slot] = { recipe: id, servings };
+    }
+    if (settings.slots.lunch) {
+      const id = choice[`l:${cookDay}`];
+      if (id) day.lunch = { recipe: id, servings };
+    }
+    if (settings.slots.dinner) {
+      const id = choice[`d${posInBlock % 2}:${cookDay}`];
+      if (id) day.dinner = { recipe: id, servings };
+    }
+    meals[dayKey] = day;
+  });
+
+  return meals;
+}
+
+// Lower is better. Everything is expressed in pounds so the trade-offs are
+// legible: a gram of protein short of target costs 35p of "regret", a pound
+// over budget costs £8 — i.e. the budget is close to hard, protein is a strong
+// pull, and among plans that clear both, the cheapest wins.
+function score(meals, state, recipeMap, ingMap, settings, expected, jitter) {
+  const summary = summarise({ meals }, recipeMap, ingMap, state.pantry);
+  const proteinGap = Math.max(0, (settings.proteinTarget || 0) - summary.avgProtein);
+  const overBudget = Math.max(0, summary.tillTotal - (settings.budget || Infinity));
+
+  const nonBatch = summary.meals.filter(
+    (m) => (m.slot === 'lunch' || m.slot === 'dinner') && m.recipe.mode !== 'batch'
+  ).length;
+
+  // Eating the identical lunch every day of the week is what makes people give
+  // up on meal prep, so repeating a main across cook sessions costs something.
+  let repeats = 0;
+  for (const slot of ['lunch', 'dinner']) {
+    const ids = new Set(summary.meals.filter((m) => m.slot === slot).map((m) => m.recipe.id));
+    repeats += Math.max(0, (expected[slot] || 0) - ids.size);
+  }
+
+  const ids = new Set(summary.meals.map((m) => m.recipe.id));
+  const distinct = ids.size;
+
+  // A few pence of seeded preference per recipe. Far too small to override a
+  // real difference in cost or protein, but enough that Regenerate lands on a
+  // different plan when several are near enough equally good.
+  let taste = 0;
+  if (jitter) for (const id of ids) taste += jitter.get(id) || 0;
+
+  // Variety is a tie-breaker, never something bought with protein: while the
+  // plan is still short of target, a more interesting week that hits less
+  // protein must not win.
+  const variety = proteinGap <= 1 ? repeats * 0.6 - distinct * 0.15 : 0;
+
+  return summary.usedTotal
+    + overBudget * 8
+    + proteinGap * 0.35
+    + nonBatch * 0.12   // mild nudge towards things that actually batch-cook
+    + variety
+    + taste;
+}
+
+function generatePlan(state, seed = 1) {
+  const { settings, recipes } = state;
+  const ingMap = new Map(state.ingredients.map((i) => [i.id, i]));
+  const recipeMap = new Map(recipes.map((r) => [r.id, r]));
+  const blocks = cookBlocks(settings.cookDays);
+  const positions = buildPositions(settings, blocks);
+
+  const pools = {};
+  for (const slot of SLOT_KEYS) {
+    pools[slot] = candidatesFor(slot, recipes, ingMap);
+  }
+
+  const jitter = new Map(recipes.map((r, i) => [r.id, noise(seed, i) * 0.06]));
+
+  // How many distinct mains a varied week would have, for the repeat penalty.
+  const expected = {
+    lunch: new Set(positions.filter((p) => p.kind === 'lunch').map((p) => p.key)).size,
+    dinner: new Set(positions.filter((p) => p.kind === 'dinner').map((p) => p.key)).size,
+  };
+
+  const evaluate = (meals) => score(meals, state, recipeMap, ingMap, settings, expected, jitter);
+
+  // A single hill-climb gets stuck wherever it started, and with a tight budget
+  // the local optima are meaningfully far apart — so run several from different
+  // starting points and keep the best. Each pass is a few milliseconds.
+  let bestMeals = null;
+  let bestScore = Infinity;
+
+  for (let restart = 0; restart < RESTARTS; restart++) {
+    const choice = openingGuess(positions, pools, ingMap, seed + restart * 101, restart);
+    let current = assemble(choice, positions, settings, blocks);
+    let best = evaluate(current);
+
+    for (let pass = 0; pass < 30; pass++) {
+      let improvedKey = null;
+      let improvedId = null;
+      let improvedScore = best;
+
+      for (const pos of positions) {
+        const original = choice[pos.key];
+        const twin = samedayTwin(pos.key);
+        const blocked = twin ? choice[twin] : null;
+        for (const candidate of pools[pos.slot]) {
+          if (candidate.id === original) continue;
+          if (blocked && candidate.id === blocked) continue;
+          choice[pos.key] = candidate.id;
+          const s = evaluate(assemble(choice, positions, settings, blocks));
+          if (s < improvedScore - 1e-9) {
+            improvedScore = s;
+            improvedKey = pos.key;
+            improvedId = candidate.id;
+          }
+        }
+        choice[pos.key] = original;
+      }
+
+      if (!improvedKey) break;
+      choice[improvedKey] = improvedId;
+      best = improvedScore;
+      current = assemble(choice, positions, settings, blocks);
+    }
+
+    if (best < bestScore) {
+      bestScore = best;
+      bestMeals = current;
+    }
+  }
+
+  return {
+    meals: bestMeals || {},
+    bought: {},
+    seed,
+    generatedAt: new Date().toISOString(),
+  };
+}
+
+// Restart 0 starts from the best protein-per-pound in each slot — the sensible
+// greedy answer. The rest start from shuffled picks so the climbs explore
+// different corners.
+function openingGuess(positions, pools, ingMap, seed, restart) {
+  const choice = {};
+  const used = new Set();
+
+  for (const pos of positions) {
+    const pool = pools[pos.slot];
+    if (!pool || !pool.length) continue;
+
+    let ranked;
+    if (restart === 0) {
+      ranked = pool.slice().sort((a, b) => {
+        const sa = recipeStats(a, ingMap);
+        const sb = recipeStats(b, ingMap);
+        const pa = sa.cost > 0 ? sa.protein / sa.cost : 0;
+        const pb = sb.cost > 0 ? sb.protein / sb.cost : 0;
+        return pb - pa;
+      });
+    } else {
+      ranked = seededShuffle(pool, seed + positions.indexOf(pos));
+    }
+
+    const fresh = ranked.find((r) => !used.has(r.id)) || ranked[0];
+    choice[pos.key] = fresh.id;
+    used.add(fresh.id);
+  }
+
+  return choice;
+}
+
+// What each cook session has to produce: recipe, how many portions, and which
+// of those portions won't survive in the fridge that long.
+function cookSessions(plan, state, recipeMap) {
+  const blocks = cookBlocks(state.settings.cookDays);
+  const sessions = [];
+
+  for (const cookDay of blocks.order) {
+    const days = blocks.blocks.get(cookDay);
+    const byRecipe = new Map();
+
+    for (const dayKey of days) {
+      const day = (plan.meals || {})[dayKey] || {};
+      for (const slot of SLOT_KEYS) {
+        const entry = day[slot];
+        if (!entry || !entry.recipe) continue;
+        const recipe = recipeMap.get(entry.recipe);
+        if (!recipe) continue;
+        if (!byRecipe.has(recipe.id)) {
+          byRecipe.set(recipe.id, { recipe, portions: 0, days: [], freezeAfter: null });
+        }
+        const agg = byRecipe.get(recipe.id);
+        agg.portions += entry.servings || 1;
+        agg.days.push({ dayKey, slot, age: daysAfterCook(cookDay, dayKey) });
+      }
+    }
+
+    for (const agg of byRecipe.values()) {
+      agg.days.sort((a, b) => a.age - b.age);
+      if (agg.recipe.keeps > 0) {
+        const beyond = agg.days.filter((d) => d.age > agg.recipe.keeps);
+        agg.freezeAfter = beyond.length ? beyond : null;
+      }
+    }
+
+    // Batch first — that's the order you'd actually cook in.
+    const items = Array.from(byRecipe.values()).sort((a, b) => {
+      if (a.recipe.mode !== b.recipe.mode) return a.recipe.mode === 'batch' ? -1 : 1;
+      return b.portions - a.portions;
+    });
+
+    sessions.push({
+      cookDay,
+      days,
+      items,
+      batchMinutes: items.filter((i) => i.recipe.mode === 'batch').reduce((m, i) => m + i.recipe.minutes, 0),
+    });
+  }
+
+  // Cooking on Sunday feeds Monday, so order sessions by the first day they
+  // actually feed rather than by where the cook day falls in the week.
+  sessions.sort((a, b) => {
+    const first = (s) => Math.min(...s.days.map((d) => DAY_KEYS.indexOf(d)));
+    return first(a) - first(b);
+  });
+
+  return sessions;
+}
+
+return { cookBlocks, daysAfterCook, generatePlan, cookSessions };
+})();
+
+// ---------- js/store.js ----------
+const __store = (() => {
+// Local persistence. Everything lives in localStorage under one key — no
+// server, no account, nothing leaves the phone.
+
+const {seedIngredients, seedRecipes} = __seed;
+const {baseSlot, uid} = __utils;
+const STORAGE_KEY = 'mealPrep.v1';
+
+function defaultState() {
+  return {
+    version: 1,
+    settings: {
+      proteinTarget: 150,   // grams per day
+      budget: 45,           // pounds per week, the target the planner aims under
+      cookDays: ['sunday', 'wednesday'],
+      slots: { breakfast: true, lunch: true, dinner: true, snack: true, snack2: false },
+      servings: 1,          // portions per meal — 1 if you're only feeding yourself
+      theme: 'auto',
+      priceStaleWeeks: 8,   // nag to re-check a price after this long
+    },
+    ingredients: seedIngredients(),
+    recipes: seedRecipes(),
+    plans: {},              // weekStartIso -> { meals, bought, seed, generatedAt }
+    pantry: {},             // ingredientId -> true ("already in the cupboard")
+  };
+}
+
+let state = null;
+
+function mergeDefaults(base, loaded) {
+  const out = { ...base, ...loaded };
+  for (const key of Object.keys(base)) {
+    const b = base[key];
+    if (b && typeof b === 'object' && !Array.isArray(b)) {
+      out[key] = { ...b, ...(loaded && loaded[key] ? loaded[key] : {}) };
+    }
+  }
+  return out;
+}
+
+// New seed items get added on upgrade; anything already saved is left alone so
+// prices you've corrected are never clobbered by an app update.
+function mergeSeeds(saved, seeds) {
+  const list = Array.isArray(saved) ? saved.slice() : [];
+  const have = new Set(list.map((x) => x.id));
+  for (const s of seeds) if (!have.has(s.id)) list.push(s);
+  return list;
+}
+
+// Some places a page can run — iOS private browsing, a sandboxed frame — have a
+// localStorage that throws on touch. The app still has to work there, so it
+// falls back to memory and says so rather than losing prices silently.
+let persistent = true;
+let memoryStore = null;
+
+function isPersistent() {
+  return persistent;
+}
+
+function readRaw() {
+  try {
+    return localStorage.getItem(STORAGE_KEY);
+  } catch (e) {
+    persistent = false;
+    return memoryStore;
+  }
+}
+
+function writeRaw(value) {
+  try {
+    localStorage.setItem(STORAGE_KEY, value);
+  } catch (e) {
+    persistent = false;
+    memoryStore = value;
+  }
+}
+
+function load() {
+  if (state) return state;
+  try {
+    const raw = readRaw();
+    const parsed = raw ? JSON.parse(raw) : null;
+    state = parsed ? mergeDefaults(defaultState(), parsed) : defaultState();
+    state.ingredients = mergeSeeds(state.ingredients, seedIngredients());
+    state.recipes = mergeSeeds(state.recipes, seedRecipes());
+  } catch (e) {
+    console.error('meal-prep: could not read saved data, starting fresh', e);
+    state = defaultState();
+  }
+  return state;
+}
+
+function save() {
+  writeRaw(JSON.stringify(state));
+}
+
+function getState() {
+  return load();
+}
+
+function updateSettings(patch) {
+  load();
+  state.settings = { ...state.settings, ...patch };
+  save();
+  return state.settings;
+}
+
+// ---------- Ingredients ----------
+
+function ingredientMap() {
+  load();
+  const map = new Map();
+  for (const i of state.ingredients) map.set(i.id, i);
+  return map;
+}
+
+function getIngredient(id) {
+  load();
+  return state.ingredients.find((i) => i.id === id) || null;
+}
+
+function updateIngredient(id, patch) {
+  load();
+  const ing = state.ingredients.find((i) => i.id === id);
+  if (!ing) return null;
+  Object.assign(ing, patch);
+  // Touching the price is what "confirming" means — it's no longer my estimate.
+  if (patch.packPrice != null || patch.packQty != null) ing.confirmedAt = new Date().toISOString();
+  save();
+  return ing;
+}
+
+function addIngredient(fields) {
+  load();
+  const ing = {
+    id: uid(),
+    name: 'New item',
+    category: 'cupboard',
+    packPrice: 1,
+    packQty: 100,
+    unit: 'g',
+    protein: 0,
+    kcal: 0,
+    unitNoun: 'x',
+    staple: false,
+    confirmedAt: new Date().toISOString(),
+    ...fields,
+  };
+  state.ingredients.push(ing);
+  save();
+  return ing;
+}
+
+function deleteIngredient(id) {
+  load();
+  state.ingredients = state.ingredients.filter((i) => i.id !== id);
+  for (const r of state.recipes) r.items = r.items.filter((it) => it.ingredient !== id);
+  delete state.pantry[id];
+  save();
+}
+
+function setPantry(id, have) {
+  load();
+  if (have) state.pantry[id] = true;
+  else delete state.pantry[id];
+  save();
+}
+
+// ---------- Recipes ----------
+
+function recipeMap() {
+  load();
+  const map = new Map();
+  for (const r of state.recipes) map.set(r.id, r);
+  return map;
+}
+
+function getRecipe(id) {
+  load();
+  return state.recipes.find((r) => r.id === id) || null;
+}
+
+function recipesForSlot(slot) {
+  load();
+  const want = baseSlot(slot);
+  return state.recipes.filter((r) => r.slot === want);
+}
+
+function saveRecipe(recipe) {
+  load();
+  const idx = state.recipes.findIndex((r) => r.id === recipe.id);
+  if (idx >= 0) state.recipes[idx] = recipe;
+  else state.recipes.push(recipe);
+  save();
+  return recipe;
+}
+
+function deleteRecipe(id) {
+  load();
+  state.recipes = state.recipes.filter((r) => r.id !== id);
+  for (const plan of Object.values(state.plans)) {
+    for (const day of Object.values(plan.meals || {})) {
+      for (const [slot, entry] of Object.entries(day)) {
+        if (entry && entry.recipe === id) delete day[slot];
+      }
+    }
+  }
+  save();
+}
+
+// ---------- Plans ----------
+
+function getPlan(weekIso) {
+  load();
+  return state.plans[weekIso] || null;
+}
+
+function ensurePlan(weekIso) {
+  load();
+  if (!state.plans[weekIso]) {
+    state.plans[weekIso] = { meals: {}, bought: {}, seed: 1, generatedAt: null };
+    save();
+  }
+  return state.plans[weekIso];
+}
+
+function setPlan(weekIso, plan) {
+  load();
+  state.plans[weekIso] = plan;
+  save();
+  return plan;
+}
+
+function setMeal(weekIso, dayKey, slot, entry) {
+  const plan = ensurePlan(weekIso);
+  if (!plan.meals[dayKey]) plan.meals[dayKey] = {};
+  if (entry) plan.meals[dayKey][slot] = entry;
+  else delete plan.meals[dayKey][slot];
+  save();
+  return plan;
+}
+
+function toggleBought(weekIso, lineId) {
+  const plan = ensurePlan(weekIso);
+  if (plan.bought[lineId]) delete plan.bought[lineId];
+  else plan.bought[lineId] = true;
+  save();
+  return plan;
+}
+
+function clearBought(weekIso) {
+  const plan = ensurePlan(weekIso);
+  plan.bought = {};
+  save();
+  return plan;
+}
+
+// ---------- Backup ----------
+
+function exportJson() {
+  load();
+  return JSON.stringify(state, null, 2);
+}
+
+function importJson(text) {
+  const parsed = JSON.parse(text);
+  if (!parsed || typeof parsed !== 'object') throw new Error('That is not a backup file.');
+  state = mergeDefaults(defaultState(), parsed);
+  state.ingredients = mergeSeeds(state.ingredients, seedIngredients());
+  state.recipes = mergeSeeds(state.recipes, seedRecipes());
+  save();
+  return state;
+}
+
+function resetAll() {
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+  } catch (e) {
+    /* memory-only mode — clearing `state` below is the whole reset */
+  }
+  memoryStore = null;
+  state = null;
+  return load();
+}
+
+return { isPersistent, load, save, getState, updateSettings, ingredientMap, getIngredient, updateIngredient, addIngredient, deleteIngredient, setPantry, recipeMap, getRecipe, recipesForSlot, saveRecipe, deleteRecipe, getPlan, ensurePlan, setPlan, setMeal, toggleBought, clearBought, exportJson, importJson, resetAll };
+})();
+
+// ---------- js/views.js ----------
+const __views = (() => {
+// Pure rendering. Every function here returns an HTML string; app.js owns the
+// state, the events and the modals.
+
+const {DAY_KEYS, DAY_LABELS, DAY_SHORT, SLOT_KEYS, SLOT_LABELS, SLOT_ICONS, escapeHtml, money, amountLabel, formatWeekRange, addDays, clamp,} = __utils;
+const {recipeStats, unitPrice, outstandingTotal} = __costing;
+const {isPersistent} = __store;
+const {CATEGORIES} = __seed;
+const {cookSessions, cookBlocks, daysAfterCook} = __planner;
+// ---------------------------------------------------------------------------
+// Week
+// ---------------------------------------------------------------------------
+
+function renderWeek(ctx) {
+  const { weekStart, plan, summary, state } = ctx;
+  const { settings } = state;
+
+  if (!plan || !summary.meals.length) {
+    return `
+      ${weekNav(weekStart)}
+      <div class="empty-state">
+        <p style="font-size:2.2rem;margin:0 0 8px">🍳</p>
+        <p><strong>No plan for this week yet.</strong></p>
+        <p>Build one and it'll pick the cheapest meals that still hit
+        ${settings.proteinTarget}g of protein a day, then tell you exactly what
+        to buy.</p>
+      </div>
+      <button class="btn primary block" data-action="generate">Build this week's plan</button>
+    `;
+  }
+
+  const budget = settings.budget || 0;
+  const budgetPct = budget ? clamp((summary.tillTotal / budget) * 100, 0, 100) : 0;
+  const over = budget && summary.tillTotal > budget;
+  const proteinPct = settings.proteinTarget
+    ? clamp((summary.avgProtein / settings.proteinTarget) * 100, 0, 100)
+    : 0;
+  // A couple of grams either side of target isn't worth flagging.
+  const proteinShort = settings.proteinTarget && summary.avgProtein < settings.proteinTarget - 5;
+
+  const blocks = cookBlocks(settings.cookDays);
+
+  return `
+    ${weekNav(weekStart)}
+
+    <div class="stat-row">
+      <div class="stat ${over ? 'over' : 'good'}">
+        <div class="stat-value">${money(summary.tillTotal)}</div>
+        <div class="stat-label">TILL TOTAL</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value">${money(summary.costPerMeal)}</div>
+        <div class="stat-label">PER MEAL</div>
+      </div>
+      <div class="stat ${proteinShort ? 'over' : 'good'}">
+        <div class="stat-value">${Math.round(summary.avgProtein)}g</div>
+        <div class="stat-label">PROTEIN / DAY</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <span class="card-title">Budget</span>
+        <span class="card-sub">${money(summary.tillTotal)} of ${money(budget)}</span>
+      </div>
+      <div class="meter"><div class="meter-fill ${over ? 'over' : ''}" style="width:${budgetPct}%"></div></div>
+      <div class="card-head" style="margin-top:12px">
+        <span class="card-title">Protein</span>
+        <span class="card-sub">${Math.round(summary.avgProtein)}g of ${settings.proteinTarget}g a day</span>
+      </div>
+      <div class="meter"><div class="meter-fill ${proteinShort ? 'over' : ''}" style="width:${proteinPct}%"></div></div>
+      <div class="field-hint" style="margin-top:10px">
+        ${summary.mealCount} meals · ${Math.round(summary.avgKcal)} kcal a day ·
+        ${money(summary.usedTotal)} of food actually eaten, ${money(summary.leftoverValue)}
+        left in the cupboard for next week.
+      </div>
+    </div>
+
+    ${storageWarning()}
+
+    ${proteinShort && plan.generatedAt ? `
+      <div class="notice">
+        This is the best it could do: nothing in the recipe list reaches
+        ${settings.proteinTarget}g a day while staying inside ${money(budget)}.
+        It's short by ${Math.round(settings.proteinTarget - summary.avgProtein)}g.
+        Raise the budget, turn on a second snack, or add a high-protein recipe of
+        your own — all on the <strong>More</strong> tab.
+      </div>` : ''}
+
+    ${summary.estimatedLines > 0 ? `
+      <div class="notice warn">
+        ${summary.estimatedLines} price${summary.estimatedLines === 1 ? '' : 's'} on this
+        list ${summary.estimatedLines === 1 ? 'is' : 'are'} still my estimate. Look them up
+        in Inform as you shop and correct them on the <strong>Prices</strong> tab — the
+        total is only as good as those numbers.
+      </div>` : ''}
+
+    <div class="btn-row">
+      <button class="btn" data-action="generate">Regenerate</button>
+      <button class="btn" data-action="clear-week">Clear week</button>
+    </div>
+
+    ${DAY_KEYS.map((dayKey, i) => dayCard(dayKey, addDays(weekStart, i), ctx, blocks)).join('')}
+  `;
+}
+
+// Shown wherever losing data would hurt. Silence here would be worse than a
+// banner: prices you typed in are the one thing in the app you can't redo fast.
+function storageWarning() {
+  if (isPersistent()) return '';
+  return `
+    <div class="notice warn">
+      This browser won't let the page save anything, so your prices and plan will
+      be gone when you close the tab. Everything still works for now — use
+      <strong>More → Export data</strong> before you leave if you want to keep it.
+    </div>`;
+}
+
+function weekNav(weekStart) {
+  return `
+    <div class="week-nav">
+      <button class="btn small" data-action="week-prev">‹ Prev</button>
+      <span class="week-range">${formatWeekRange(weekStart)}</span>
+      <button class="btn small" data-action="week-next">Next ›</button>
+    </div>
+  `;
+}
+
+function dayCard(dayKey, date, ctx, blocks) {
+  const { plan, state, ingMap, recipeMap } = ctx;
+  const day = (plan.meals || {})[dayKey] || {};
+  const totals = ctx.summary.perDay[dayKey] || { protein: 0, cost: 0 };
+  const cookDay = blocks.dayToBlock[dayKey];
+  const isCookDay = state.settings.cookDays.includes(dayKey);
+
+  const rows = SLOT_KEYS.filter((slot) => state.settings.slots[slot]).map((slot) => {
+    const entry = day[slot];
+    const recipe = entry ? recipeMap.get(entry.recipe) : null;
+    if (!recipe) {
+      return `
+        <button class="meal-row" data-action="pick-meal" data-day="${dayKey}" data-slot="${slot}">
+          <span class="meal-icon">${SLOT_ICONS[slot]}</span>
+          <span class="meal-main"><span class="meal-name empty">Add ${SLOT_LABELS[slot].toLowerCase()}</span></span>
+        </button>`;
+    }
+    const stats = recipeStats(recipe, ingMap);
+    const servings = entry.servings || 1;
+    const age = daysAfterCook(cookDay, dayKey);
+    const stale = recipe.mode === 'batch' && recipe.keeps > 0 && age > recipe.keeps;
+    return `
+      <button class="meal-row" data-action="pick-meal" data-day="${dayKey}" data-slot="${slot}">
+        <span class="meal-icon">${SLOT_ICONS[slot]}</span>
+        <span class="meal-main">
+          <span class="meal-name">${escapeHtml(recipe.name)}${servings > 1 ? ` ×${servings}` : ''}</span>
+          <span class="meal-sub">
+            ${Math.round(stats.protein * servings)}g protein · ${Math.round(stats.kcal * servings)} kcal
+            ${stale ? ' · <strong>from the freezer</strong>' : ''}
+          </span>
+        </span>
+        <span class="meal-cost">${money(stats.cost * servings)}</span>
+      </button>`;
+  }).join('');
+
+  return `
+    <div class="card day-card">
+      <div class="day-head">
+        <span>${DAY_LABELS[dayKey]} ${date.getDate()}/${date.getMonth() + 1}${isCookDay ? ' · 👨‍🍳 cook day' : ''}</span>
+        <span class="day-meta">${Math.round(totals.protein)}g · ${money(totals.cost)}</span>
+      </div>
+      ${rows}
+    </div>
+  `;
+}
+
+// ---------------------------------------------------------------------------
+// Shop
+// ---------------------------------------------------------------------------
+
+function renderShop(ctx) {
+  const { plan, summary, weekStart } = ctx;
+
+  if (!summary.lines.length) {
+    return `
+      ${weekNav(weekStart)}
+      <div class="empty-state">Build a plan on the Week tab and the shopping list appears here.</div>
+    `;
+  }
+
+  const bought = plan.bought || {};
+  const buyLines = summary.lines.filter((l) => !l.staple && !l.have);
+  const stapleLines = summary.lines.filter((l) => l.staple || l.have);
+  const left = outstandingTotal(summary.lines, bought);
+
+  const groups = CATEGORIES.map((cat) => {
+    const lines = buyLines.filter((l) => l.ing.category === cat.key);
+    if (!lines.length) return '';
+    return `
+      <div class="shop-group-title">${cat.icon} ${cat.label}</div>
+      ${lines.map((l) => shopLine(l, bought)).join('')}
+    `;
+  }).join('');
+
+  return `
+    ${weekNav(weekStart)}
+
+    <div class="notice">
+      Quantities are whole packs, because you can't buy 300g of a 500g bag. The
+      leftovers are yours to keep — that's why "per meal" below is lower than the
+      till total divided by meals.
+    </div>
+
+    ${groups}
+
+    ${stapleLines.length ? `
+      <div class="shop-group-title">🧂 Cupboard staples</div>
+      <div class="notice">
+        Oil, spices, stock cubes and the like. Tick the ones you already have and
+        they come off the total — untick when they run out.
+      </div>
+      ${stapleLines.map((l) => stapleLine(l)).join('')}
+    ` : ''}
+
+    <div class="total-bar">
+      <span>
+        ${money(left)}
+        <span class="total-sub" style="display:block">left to buy</span>
+      </span>
+      <span style="text-align:right">
+        ${money(summary.tillTotal)}
+        <span class="total-sub" style="display:block">full list</span>
+      </span>
+    </div>
+
+    <div class="btn-row" style="margin-top:12px">
+      <button class="btn" data-action="clear-ticks">Untick all</button>
+      <button class="btn" data-action="copy-list">Copy list</button>
+    </div>
+  `;
+}
+
+function shopLine(line, bought) {
+  const done = !!bought[line.id];
+  const ing = line.ing;
+  const packLabel = amountLabel(ing, ing.packQty);
+  const packs = line.packs > 1 ? `${line.packs} × ` : '';
+  const leftoverNote = line.leftover > 0
+    ? ` · ${amountLabel(ing, line.leftover)} spare`
+    : '';
+
+  return `
+    <div class="shop-line ${done ? 'done' : ''}">
+      <button class="tickbox ${done ? 'on' : ''}" data-action="tick" data-id="${line.id}">${done ? '✓' : ''}</button>
+      <div class="shop-main" data-action="edit-price" data-id="${line.id}">
+        <div class="shop-name">${escapeHtml(ing.name)}${line.estimate ? '<span class="badge estimate">est</span>' : ''}</div>
+        <div class="shop-sub">${packs}${packLabel} pack · need ${amountLabel(ing, line.required)}${leftoverNote}</div>
+      </div>
+      <div class="shop-cost">${money(line.packCost)}</div>
+    </div>
+  `;
+}
+
+function stapleLine(line) {
+  const ing = line.ing;
+  return `
+    <div class="shop-line ${line.have ? 'done' : ''}">
+      <button class="tickbox ${line.have ? 'on' : ''}" data-action="pantry" data-id="${line.id}">${line.have ? '✓' : ''}</button>
+      <div class="shop-main" data-action="edit-price" data-id="${line.id}">
+        <div class="shop-name">${escapeHtml(ing.name)}${line.estimate ? '<span class="badge estimate">est</span>' : ''}</div>
+        <div class="shop-sub">${line.have ? 'already have it' : `need ${amountLabel(ing, line.required)} this week`}</div>
+      </div>
+      <div class="shop-cost">${line.have ? '—' : money(line.packCost)}</div>
+    </div>
+  `;
+}
+
+// The plain-text version for the clipboard, so the list can be pasted into
+// notes, messages, or read off with the phone locked.
+function shoppingText(summary, weekStart) {
+  const lines = [`Shopping list — week of ${formatWeekRange(weekStart)}`, ''];
+  for (const cat of CATEGORIES) {
+    const items = summary.lines.filter((l) => l.ing.category === cat.key && !l.have && l.packs > 0);
+    if (!items.length) continue;
+    lines.push(cat.label.toUpperCase());
+    for (const l of items) {
+      const packLabel = amountLabel(l.ing, l.ing.packQty);
+      lines.push(`  ${l.packs} × ${l.ing.name} (${packLabel})  ${money(l.packCost)}`);
+    }
+    lines.push('');
+  }
+  lines.push(`TOTAL ${money(summary.tillTotal)}`);
+  return lines.join('\n');
+}
+
+// ---------------------------------------------------------------------------
+// Cook
+// ---------------------------------------------------------------------------
+
+function renderCook(ctx) {
+  const { plan, state, ingMap, recipeMap, weekStart, summary } = ctx;
+
+  if (!summary.meals.length) {
+    return `${weekNav(weekStart)}<div class="empty-state">Build a plan first and your cook sessions show up here.</div>`;
+  }
+
+  const sessions = cookSessions(plan, state, recipeMap);
+
+  return `
+    ${weekNav(weekStart)}
+    <div class="notice">
+      Two sessions, everything else is reheating or five minutes of assembly.
+      Portions are counted from the plan, so cook exactly this much and there's
+      nothing spare going off in the fridge.
+    </div>
+    ${sessions.map((s) => cookSession(s, ingMap)).join('')}
+  `;
+}
+
+function cookSession(session, ingMap) {
+  const batch = session.items.filter((i) => i.recipe.mode === 'batch');
+  const fresh = session.items.filter((i) => i.recipe.mode !== 'batch');
+  const covers = session.days.map((d) => DAY_SHORT[d]).join(', ');
+
+  return `
+    <div class="card">
+      <div class="card-head">
+        <span class="card-title">👨‍🍳 ${DAY_LABELS[session.cookDay]}</span>
+        <span class="card-sub">${session.batchMinutes} min · feeds ${covers}</span>
+      </div>
+      ${batch.length ? batch.map((item) => cookItem(item, session, ingMap)).join('') : `
+        <div class="field-hint">Nothing to batch cook in this session.</div>`}
+      ${fresh.length ? `
+        <div class="shop-group-title" style="margin-top:14px">Cook fresh on the day</div>
+        ${fresh.map((item) => `
+          <div class="ing-line">
+            <span>${escapeHtml(item.recipe.name)}</span>
+            <span class="ing-amt">${item.portions} × ${item.recipe.minutes} min</span>
+          </div>`).join('')}
+      ` : ''}
+    </div>
+  `;
+}
+
+function cookItem(item, session, ingMap) {
+  const { recipe, portions } = item;
+  const ingredients = recipe.items.map((it) => {
+    const ing = ingMap.get(it.ingredient);
+    if (!ing) return '';
+    const amount = it.amount * portions;
+    const label = amountLabel(ing, amount);
+    return `
+      <div class="ing-line">
+        <span>${escapeHtml(ing.name)}</span>
+        <span class="ing-amt">${label}</span>
+      </div>`;
+  }).join('');
+
+  const freeze = item.freezeAfter
+    ? `<div class="notice warn" style="margin:10px 0 0">
+         ${item.freezeAfter.length} portion${item.freezeAfter.length === 1 ? '' : 's'} into the
+         freezer — ${item.freezeAfter.map((d) => DAY_SHORT[d.dayKey]).join(', ')}
+         ${item.freezeAfter.length === 1 ? 'is' : 'are'} past the
+         ${recipe.keeps}-day fridge life. Out the night before.
+       </div>`
+    : '';
+
+  return `
+    <div style="margin-bottom:16px">
+      <div class="card-head" style="margin-bottom:6px">
+        <span class="card-title" style="font-size:0.94rem">
+          ${escapeHtml(recipe.name)}<span class="badge batch">${portions} portion${portions === 1 ? '' : 's'}</span>
+        </span>
+        <span class="card-sub">${recipe.minutes} min</span>
+      </div>
+      ${ingredients}
+      <div style="margin-top:10px">
+        ${recipe.steps.map((s, i) => `
+          <div class="cook-step"><span class="num">${i + 1}</span><span>${escapeHtml(s)}</span></div>
+        `).join('')}
+      </div>
+      ${freeze}
+    </div>
+  `;
+}
+
+// ---------------------------------------------------------------------------
+// Prices
+// ---------------------------------------------------------------------------
+
+function renderPrices(ctx) {
+  const { state, summary, priceFilter } = ctx;
+  const inList = new Set(summary.lines.map((l) => l.id));
+  const unconfirmed = state.ingredients.filter((i) => !i.confirmedAt).length;
+
+  let items = state.ingredients.slice();
+  if (priceFilter === 'week') items = items.filter((i) => inList.has(i.id));
+  if (priceFilter === 'estimates') items = items.filter((i) => !i.confirmedAt);
+
+  const groups = CATEGORIES.map((cat) => {
+    const list = items.filter((i) => i.category === cat.key)
+      .sort((a, b) => a.name.localeCompare(b.name));
+    if (!list.length) return '';
+    return `
+      <div class="shop-group-title">${cat.icon} ${cat.label}</div>
+      ${list.map((ing) => priceRow(ing, inList.has(ing.id))).join('')}
+    `;
+  }).join('');
+
+  return `
+    <div class="notice">
+      <strong>This is the bit only you can do.</strong> There's no way for an app
+      to read prices out of Inform — it's an internal staff system with no public
+      way in, and pointing a script at it with your work login is a policy problem,
+      not a technical one. So: look the price up in Inform, tap the item here, type
+      it in once. It stays until the price changes, and every total in the app
+      follows from it.
+    </div>
+
+    <div class="chip-row" style="margin-bottom:12px">
+      <button class="chip ${priceFilter === 'week' ? 'on' : ''}" data-action="price-filter" data-filter="week">This week's shop</button>
+      <button class="chip ${priceFilter === 'estimates' ? 'on' : ''}" data-action="price-filter" data-filter="estimates">Still estimates${unconfirmed ? ` (${unconfirmed})` : ''}</button>
+      <button class="chip ${priceFilter === 'all' ? 'on' : ''}" data-action="price-filter" data-filter="all">Everything</button>
+    </div>
+
+    ${groups || '<div class="empty-state">Nothing here — try another filter.</div>'}
+
+    <button class="btn block" data-action="add-ingredient" style="margin-top:14px">+ Add an item</button>
+  `;
+}
+
+function priceRow(ing, inWeek) {
+  const per = unitPrice(ing);
+  const perLabel = ing.unit === 'unit'
+    ? `${money(per)} each`
+    : `${money(per * 100)} / 100${ing.unit}`;
+  const packLabel = amountLabel(ing, ing.packQty);
+
+  return `
+    <div class="shop-line" data-action="edit-price" data-id="${ing.id}">
+      <div class="shop-main">
+        <div class="shop-name">
+          ${escapeHtml(ing.name)}
+          ${ing.confirmedAt ? '<span class="badge confirmed">yours</span>' : '<span class="badge estimate">est</span>'}
+          ${inWeek ? '<span class="badge batch">this week</span>' : ''}
+        </div>
+        <div class="shop-sub">${packLabel} · ${perLabel} · ${ing.protein}g protein${ing.unit === 'unit' ? ' each' : ' / 100' + ing.unit}</div>
+      </div>
+      <div class="shop-cost">${money(ing.packPrice)}</div>
+    </div>
+  `;
+}
+
+// ---------------------------------------------------------------------------
+// More
+// ---------------------------------------------------------------------------
+
+function renderMore(ctx) {
+  const { state } = ctx;
+  const s = state.settings;
+
+  return `
+    <div class="section-title">Targets</div>
+    <div class="card">
+      <div class="field-pair">
+        <div class="field">
+          <label for="set-protein">Protein a day (g)</label>
+          <input id="set-protein" type="number" inputmode="numeric" value="${s.proteinTarget}" data-action="set-number" data-key="proteinTarget" />
+        </div>
+        <div class="field">
+          <label for="set-budget">Budget a week (£)</label>
+          <input id="set-budget" type="number" inputmode="decimal" step="0.5" value="${s.budget}" data-action="set-number" data-key="budget" />
+        </div>
+      </div>
+      <div class="field">
+        <label for="set-servings">Portions per meal</label>
+        <input id="set-servings" type="number" inputmode="numeric" min="1" value="${s.servings}" data-action="set-number" data-key="servings" />
+        <div class="field-hint">1 if it's just you. 2 if you're feeding someone else the same food.</div>
+      </div>
+      <div class="field-hint">
+        The planner treats the budget as close to a hard ceiling and protein as a
+        strong pull, then goes for the cheapest plan that clears both. Set the
+        budget too low and it'll get as close as the prices allow.
+      </div>
+    </div>
+
+    <div class="section-title">Cook days</div>
+    <div class="card">
+      <div class="chip-row">
+        ${DAY_KEYS.map((d) => `
+          <button class="chip ${s.cookDays.includes(d) ? 'on' : ''}" data-action="toggle-cookday" data-day="${d}">${DAY_SHORT[d]}</button>
+        `).join('')}
+      </div>
+      <div class="field-hint" style="margin-top:10px">
+        Each day eats from the most recent cook session. Two days is the sweet
+        spot: nothing sits in the fridge longer than four days.
+      </div>
+    </div>
+
+    <div class="section-title">Meals to plan</div>
+    <div class="card">
+      ${SLOT_KEYS.map((slot) => `
+        <div class="switch-row">
+          <div>
+            <div class="switch-label">${SLOT_ICONS[slot]} ${SLOT_LABELS[slot]}</div>
+            ${slot === 'snack2' ? '<div class="switch-sub">The cheapest way to close a protein gap</div>' : ''}
+          </div>
+          <button class="chip ${s.slots[slot] ? 'on' : ''}" data-action="toggle-slot" data-slot="${slot}">${s.slots[slot] ? 'On' : 'Off'}</button>
+        </div>
+      `).join('')}
+    </div>
+
+    <div class="section-title">Recipes</div>
+    <div class="card">
+      <div class="field-hint" style="margin-bottom:10px">
+        ${state.recipes.length} recipes. Add your own — anything you already cook
+        works, as long as you tell it the ingredients and rough amounts.
+      </div>
+      <button class="btn block" data-action="browse-recipes">Browse & edit recipes</button>
+      <button class="btn block primary" data-action="new-recipe" style="margin-top:8px">+ New recipe</button>
+    </div>
+
+    <div class="section-title">Appearance</div>
+    <div class="card">
+      <div class="chip-row">
+        ${['auto', 'light', 'dark'].map((t) => `
+          <button class="chip ${s.theme === t ? 'on' : ''}" data-action="set-theme" data-theme="${t}">${t[0].toUpperCase() + t.slice(1)}</button>
+        `).join('')}
+      </div>
+    </div>
+
+    <div class="section-title">Your data</div>
+    ${storageWarning()}
+    <div class="card">
+      <div class="field-hint" style="margin-bottom:10px">
+        Everything lives in this browser on this phone. Nothing is uploaded
+        anywhere. Export before you clear your browser data or change phone.
+      </div>
+      <button class="btn block" data-action="export">Export data</button>
+      <button class="btn block" data-action="import" style="margin-top:8px">Import data</button>
+      <button class="btn block danger" data-action="reset" style="margin-top:8px">Reset everything</button>
+    </div>
+
+    <div class="section-title">About the prices</div>
+    <div class="card">
+      <div class="field-hint">
+        The prices this app started with are typical UK supermarket estimates, not
+        your shop's. Inform has no public interface an app can read, so nothing
+        here talks to it — you type a price in once and it's remembered. The
+        <strong>Prices</strong> tab marks which are still guesses.
+      </div>
+    </div>
+  `;
+}
+
+return { renderWeek, storageWarning, renderShop, shoppingText, renderCook, renderPrices, renderMore };
+})();
+
+// ---------- js/app.js ----------
+const __app = (() => {
+// App shell: state wiring, tab routing, event delegation, modals.
+
+const {DAY_KEYS, SLOT_KEYS, SLOT_LABELS, isoDate, startOfWeek, addDays, escapeHtml, money, qs, uid,} = __utils;
+const store = __store;
+const {summarise, recipeStats, proteinPerPound} = __costing;
+const {generatePlan} = __planner;
+const {CATEGORIES} = __seed;
+const {renderWeek, renderShop, renderCook, renderPrices, renderMore, shoppingText,} = __views;
+const ui = {
+  tab: 'week',
+  weekStart: startOfWeek(new Date()),
+  priceFilter: 'week',
+  modal: null,       // { type, ... }
+  recipeDraft: null,
+};
+
+// ---------------------------------------------------------------------------
+// Context + render
+// ---------------------------------------------------------------------------
+
+function buildCtx() {
+  const state = store.getState();
+  const ingMap = store.ingredientMap();
+  const recipeMap = store.recipeMap();
+  const weekIso = isoDate(ui.weekStart);
+  const plan = store.getPlan(weekIso) || { meals: {}, bought: {}, seed: 1, generatedAt: null };
+  const summary = summarise(plan, recipeMap, ingMap, state.pantry);
+  return {
+    state, ingMap, recipeMap, weekIso, plan, summary,
+    weekStart: ui.weekStart,
+    priceFilter: ui.priceFilter,
+  };
+}
+
+function render() {
+  const ctx = buildCtx();
+  applyTheme(ctx.state.settings.theme);
+
+  const root = qs('#view-root');
+  const titles = {
+    week: '🥘 This week', shop: '🛒 Shopping list', cook: '👨‍🍳 Cook sessions',
+    prices: '🏷️ Prices', more: '⚙️ Settings',
+  };
+  qs('#topbar-title').textContent = titles[ui.tab] || 'Meal Prep';
+
+  if (ui.tab === 'week') root.innerHTML = renderWeek(ctx);
+  else if (ui.tab === 'shop') root.innerHTML = renderShop(ctx);
+  else if (ui.tab === 'cook') root.innerHTML = renderCook(ctx);
+  else if (ui.tab === 'prices') root.innerHTML = renderPrices(ctx);
+  else root.innerHTML = renderMore(ctx);
+
+  for (const btn of document.querySelectorAll('.tab-btn')) {
+    btn.classList.toggle('active', btn.dataset.tab === ui.tab);
+  }
+
+  renderModal(ctx);
+}
+
+// Some hosts stamp data-theme on the root themselves to pass their own
+// light/dark choice down. "Auto" has to mean "don't touch that", so this only
+// ever clears a stamp it put there itself.
+let themeStampedByApp = false;
+
+function applyTheme(theme) {
+  const root = document.documentElement;
+  if (theme === 'auto') {
+    if (themeStampedByApp) {
+      delete root.dataset.theme;
+      themeStampedByApp = false;
+    }
+    return;
+  }
+  root.dataset.theme = theme;
+  themeStampedByApp = true;
+}
+
+function toast(message) {
+  const root = qs('#toast-root');
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.textContent = message;
+  root.appendChild(el);
+  setTimeout(() => el.remove(), 2200);
+}
+
+// ---------------------------------------------------------------------------
+// Modals
+// ---------------------------------------------------------------------------
+
+function openModal(modal) {
+  ui.modal = modal;
+  render();
+}
+
+function closeModal() {
+  ui.modal = null;
+  ui.recipeDraft = null;
+  render();
+}
+
+function renderModal(ctx) {
+  const root = qs('#modal-root');
+  if (!ui.modal) { root.innerHTML = ''; return; }
+
+  let body = '';
+  if (ui.modal.type === 'pick-meal') body = pickMealModal(ctx);
+  else if (ui.modal.type === 'edit-price') body = editPriceModal(ctx);
+  else if (ui.modal.type === 'recipes') body = recipeListModal(ctx);
+  else if (ui.modal.type === 'recipe-edit') body = recipeEditModal(ctx);
+  else if (ui.modal.type === 'text') body = textModal(ctx);
+
+  root.innerHTML = `<div class="modal-backdrop" data-action="close-modal"><div class="modal" data-stop>${body}</div></div>`;
+}
+
+function pickMealModal(ctx) {
+  const { slot, day } = ui.modal;
+  const { ingMap, plan } = ctx;
+  const current = ((plan.meals || {})[day] || {})[slot];
+
+  const options = store.recipesForSlot(slot)
+    .map((r) => ({ r, stats: recipeStats(r, ingMap), ppp: proteinPerPound(r, ingMap) }))
+    .sort((a, b) => b.ppp - a.ppp);
+
+  return `
+    <div class="modal-title">${SLOT_LABELS[slot]} — ${day[0].toUpperCase() + day.slice(1)}</div>
+    <div class="field-hint" style="margin-bottom:10px">Sorted by protein per pound, best value first.</div>
+    ${options.map(({ r, stats }) => `
+      <button class="option-row ${current && current.recipe === r.id ? 'on' : ''}" data-action="set-meal" data-recipe="${r.id}">
+        <div class="option-main">
+          <div class="option-name">${escapeHtml(r.name)}<span class="badge ${r.mode === 'batch' ? 'batch' : 'fresh'}">${r.mode === 'batch' ? 'batch' : 'fresh'}</span></div>
+          <div class="option-sub">${Math.round(stats.protein)}g protein · ${Math.round(stats.kcal)} kcal · ${r.minutes} min</div>
+        </div>
+        <div class="shop-cost">${money(stats.cost)}</div>
+      </button>
+    `).join('')}
+    <div class="btn-row" style="margin-top:12px">
+      ${current ? '<button class="btn danger" data-action="clear-meal">Remove</button>' : ''}
+      <button class="btn" data-action="close-modal">Close</button>
+    </div>
+  `;
+}
+
+function editPriceModal(ctx) {
+  const ing = store.getIngredient(ui.modal.id);
+  if (!ing) return '<div class="modal-title">Gone</div>';
+
+  return `
+    <div class="modal-title">${escapeHtml(ing.name)}</div>
+    <div class="field">
+      <label for="ing-name">Name</label>
+      <input id="ing-name" type="text" value="${escapeHtml(ing.name)}" />
+    </div>
+    <div class="field-pair">
+      <div class="field">
+        <label for="ing-price">Pack price (£)</label>
+        <input id="ing-price" type="number" inputmode="decimal" step="0.01" value="${ing.packPrice}" />
+      </div>
+      <div class="field">
+        <label for="ing-qty">Pack size</label>
+        <input id="ing-qty" type="number" inputmode="decimal" step="1" value="${ing.packQty}" />
+      </div>
+      <div class="field">
+        <label for="ing-unit">Unit</label>
+        <select id="ing-unit">
+          <option value="g" ${ing.unit === 'g' ? 'selected' : ''}>g</option>
+          <option value="ml" ${ing.unit === 'ml' ? 'selected' : ''}>ml</option>
+          <option value="unit" ${ing.unit === 'unit' ? 'selected' : ''}>each</option>
+        </select>
+      </div>
+    </div>
+    <div class="field-hint" style="margin-top:-6px;margin-bottom:12px">
+      Whatever's on the shelf edge: £5.75 for a 1000g bag, £3.20 for 15 eggs.
+    </div>
+    <div class="field-pair">
+      <div class="field">
+        <label for="ing-protein">Protein${ing.unit === 'unit' ? ' each' : ' / 100' + ing.unit}</label>
+        <input id="ing-protein" type="number" inputmode="decimal" step="0.1" value="${ing.protein}" />
+      </div>
+      <div class="field">
+        <label for="ing-kcal">kcal${ing.unit === 'unit' ? ' each' : ' / 100' + ing.unit}</label>
+        <input id="ing-kcal" type="number" inputmode="decimal" step="1" value="${ing.kcal}" />
+      </div>
+      <div class="field">
+        <label for="ing-cat">Aisle</label>
+        <select id="ing-cat">
+          ${CATEGORIES.map((c) => `<option value="${c.key}" ${ing.category === c.key ? 'selected' : ''}>${c.label}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+    <div class="switch-row">
+      <div>
+        <div class="switch-label">Cupboard staple</div>
+        <div class="switch-sub">Lasts months — kept out of the weekly total once you have it</div>
+      </div>
+      <button class="chip ${ing.staple ? 'on' : ''}" data-action="toggle-staple" data-id="${ing.id}">${ing.staple ? 'Yes' : 'No'}</button>
+    </div>
+    <div class="btn-row" style="margin-top:14px">
+      <button class="btn primary" data-action="save-price" data-id="${ing.id}">Save</button>
+      <button class="btn" data-action="close-modal">Cancel</button>
+    </div>
+    <button class="btn block danger" data-action="delete-ingredient" data-id="${ing.id}" style="margin-top:8px">Delete item</button>
+  `;
+}
+
+function recipeListModal(ctx) {
+  const { ingMap } = ctx;
+  const bySlot = SLOT_KEYS.map((slot) => {
+    const list = store.recipesForSlot(slot);
+    if (!list.length) return '';
+    return `
+      <div class="shop-group-title">${SLOT_LABELS[slot]}</div>
+      ${list.map((r) => {
+        const stats = recipeStats(r, ingMap);
+        return `
+          <button class="option-row" data-action="edit-recipe" data-recipe="${r.id}">
+            <div class="option-main">
+              <div class="option-name">${escapeHtml(r.name)}</div>
+              <div class="option-sub">${Math.round(stats.protein)}g protein · ${money(stats.cost)} · ${r.minutes} min</div>
+            </div>
+            <div class="shop-cost">›</div>
+          </button>`;
+      }).join('')}
+    `;
+  }).join('');
+
+  return `
+    <div class="modal-title">Recipes</div>
+    ${bySlot}
+    <div class="btn-row" style="margin-top:12px">
+      <button class="btn primary" data-action="new-recipe">+ New</button>
+      <button class="btn" data-action="close-modal">Close</button>
+    </div>
+  `;
+}
+
+function recipeEditModal(ctx) {
+  const d = ui.recipeDraft;
+  if (!d) return '';
+  const { state } = ctx;
+  const sorted = state.ingredients.slice().sort((a, b) => a.name.localeCompare(b.name));
+
+  return `
+    <div class="modal-title">${d.isNew ? 'New recipe' : 'Edit recipe'}</div>
+    <div class="field">
+      <label for="r-name">Name</label>
+      <input id="r-name" type="text" value="${escapeHtml(d.name)}" />
+    </div>
+    <div class="field-pair">
+      <div class="field">
+        <label for="r-slot">Meal</label>
+        <select id="r-slot">
+          ${SLOT_KEYS.map((s) => `<option value="${s}" ${d.slot === s ? 'selected' : ''}>${SLOT_LABELS[s]}</option>`).join('')}
+        </select>
+      </div>
+      <div class="field">
+        <label for="r-mode">Style</label>
+        <select id="r-mode">
+          <option value="batch" ${d.mode === 'batch' ? 'selected' : ''}>Batch cook</option>
+          <option value="assemble" ${d.mode !== 'batch' ? 'selected' : ''}>Made fresh</option>
+        </select>
+      </div>
+    </div>
+    <div class="field-pair">
+      <div class="field">
+        <label for="r-minutes">Minutes</label>
+        <input id="r-minutes" type="number" inputmode="numeric" value="${d.minutes}" />
+      </div>
+      <div class="field">
+        <label for="r-keeps">Fridge days</label>
+        <input id="r-keeps" type="number" inputmode="numeric" value="${d.keeps}" />
+      </div>
+    </div>
+
+    <div class="shop-group-title">Ingredients (per portion)</div>
+    ${d.items.map((it, i) => `
+      <div class="field-pair" style="align-items:flex-end">
+        <div class="field" style="flex:2">
+          <select data-action="draft-ing" data-index="${i}">
+            ${sorted.map((ing) => `<option value="${ing.id}" ${it.ingredient === ing.id ? 'selected' : ''}>${escapeHtml(ing.name)}</option>`).join('')}
+          </select>
+        </div>
+        <div class="field" style="flex:1">
+          <input type="number" inputmode="decimal" step="0.1" value="${it.amount}" data-action="draft-amt" data-index="${i}" />
+        </div>
+        <div class="field" style="flex:none">
+          <button class="btn small danger" data-action="draft-remove" data-index="${i}">✕</button>
+        </div>
+      </div>
+    `).join('')}
+    <button class="btn small" data-action="draft-add">+ Ingredient</button>
+    <div class="field-hint" style="margin-top:6px">
+      Amounts are grams, ml or count, per single portion — dry weight for rice,
+      pasta and oats.
+    </div>
+
+    <div class="field" style="margin-top:14px">
+      <label for="r-steps">Method (one step per line)</label>
+      <textarea id="r-steps" rows="5">${escapeHtml(d.steps.join('\n'))}</textarea>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn primary" data-action="save-recipe">Save</button>
+      <button class="btn" data-action="close-modal">Cancel</button>
+    </div>
+    ${d.isNew ? '' : '<button class="btn block danger" data-action="delete-recipe">Delete recipe</button>'}
+  `;
+}
+
+function textModal() {
+  const { title, hint, value, mode } = ui.modal;
+  return `
+    <div class="modal-title">${escapeHtml(title)}</div>
+    <div class="field-hint" style="margin-bottom:10px">${escapeHtml(hint)}</div>
+    <div class="field">
+      <textarea id="text-box" rows="10" ${mode === 'export' ? 'readonly' : ''}>${escapeHtml(value || '')}</textarea>
+    </div>
+    <div class="btn-row">
+      ${mode === 'export'
+        ? '<button class="btn primary" data-action="copy-text">Copy</button>'
+        : '<button class="btn primary" data-action="do-import">Import</button>'}
+      <button class="btn" data-action="close-modal">Close</button>
+    </div>
+  `;
+}
+
+// ---------------------------------------------------------------------------
+// Actions
+// ---------------------------------------------------------------------------
+
+const actions = {
+  'switch-tab'(el) {
+    ui.tab = el.dataset.tab;
+    render();
+  },
+
+  'week-prev'() { ui.weekStart = addDays(ui.weekStart, -7); render(); },
+  'week-next'() { ui.weekStart = addDays(ui.weekStart, 7); render(); },
+
+  generate() {
+    const ctx = buildCtx();
+    const prev = store.getPlan(ctx.weekIso);
+    const seed = prev && prev.generatedAt ? (prev.seed || 1) + 7 : 1;
+    const plan = generatePlan(ctx.state, seed);
+    plan.bought = prev ? prev.bought || {} : {};
+    store.setPlan(ctx.weekIso, plan);
+    const after = summarise(plan, ctx.recipeMap, ctx.ingMap, ctx.state.pantry);
+    toast(`${money(after.tillTotal)} · ${Math.round(after.avgProtein)}g protein a day`);
+    render();
+  },
+
+  'clear-week'() {
+    const ctx = buildCtx();
+    store.setPlan(ctx.weekIso, { meals: {}, bought: {}, seed: 1, generatedAt: null });
+    render();
+  },
+
+  'pick-meal'(el) {
+    openModal({ type: 'pick-meal', day: el.dataset.day, slot: el.dataset.slot });
+  },
+
+  'set-meal'(el) {
+    const ctx = buildCtx();
+    const { day, slot } = ui.modal;
+    store.setMeal(ctx.weekIso, day, slot, {
+      recipe: el.dataset.recipe,
+      servings: Math.max(1, ctx.state.settings.servings || 1),
+    });
+    closeModal();
+  },
+
+  'clear-meal'() {
+    const ctx = buildCtx();
+    store.setMeal(ctx.weekIso, ui.modal.day, ui.modal.slot, null);
+    closeModal();
+  },
+
+  tick(el) {
+    const ctx = buildCtx();
+    store.toggleBought(ctx.weekIso, el.dataset.id);
+    render();
+  },
+
+  pantry(el) {
+    const state = store.getState();
+    store.setPantry(el.dataset.id, !state.pantry[el.dataset.id]);
+    render();
+  },
+
+  'clear-ticks'() {
+    const ctx = buildCtx();
+    store.clearBought(ctx.weekIso);
+    render();
+  },
+
+  async 'copy-list'() {
+    const ctx = buildCtx();
+    await copyText(shoppingText(ctx.summary, ctx.weekStart));
+    toast('Shopping list copied');
+  },
+
+  'edit-price'(el) {
+    openModal({ type: 'edit-price', id: el.dataset.id });
+  },
+
+  'toggle-staple'(el) {
+    const ing = store.getIngredient(el.dataset.id);
+    if (ing) store.updateIngredient(ing.id, { staple: !ing.staple });
+    render();
+  },
+
+  'save-price'(el) {
+    const price = Number(qs('#ing-price').value);
+    const packQty = Number(qs('#ing-qty').value);
+    if (!Number.isFinite(price) || price < 0 || !Number.isFinite(packQty) || packQty <= 0) {
+      toast('Check the price and pack size');
+      return;
+    }
+    store.updateIngredient(el.dataset.id, {
+      name: qs('#ing-name').value.trim() || 'Unnamed',
+      packPrice: price,
+      packQty,
+      unit: qs('#ing-unit').value,
+      protein: Number(qs('#ing-protein').value) || 0,
+      kcal: Number(qs('#ing-kcal').value) || 0,
+      category: qs('#ing-cat').value,
+    });
+    closeModal();
+    toast('Price saved');
+  },
+
+  'delete-ingredient'(el) {
+    if (!confirm('Delete this item? It will be removed from any recipe using it.')) return;
+    store.deleteIngredient(el.dataset.id);
+    closeModal();
+  },
+
+  'price-filter'(el) {
+    ui.priceFilter = el.dataset.filter;
+    render();
+  },
+
+  'add-ingredient'() {
+    const ing = store.addIngredient({ name: 'New item' });
+    openModal({ type: 'edit-price', id: ing.id });
+  },
+
+  'toggle-cookday'(el) {
+    const state = store.getState();
+    const day = el.dataset.day;
+    const days = state.settings.cookDays.includes(day)
+      ? state.settings.cookDays.filter((d) => d !== day)
+      : [...state.settings.cookDays, day];
+    if (!days.length) { toast('You need at least one cook day'); return; }
+    store.updateSettings({ cookDays: days.sort((a, b) => DAY_KEYS.indexOf(a) - DAY_KEYS.indexOf(b)) });
+    render();
+  },
+
+  'toggle-slot'(el) {
+    const state = store.getState();
+    const slot = el.dataset.slot;
+    store.updateSettings({ slots: { ...state.settings.slots, [slot]: !state.settings.slots[slot] } });
+    render();
+  },
+
+  'set-theme'(el) {
+    store.updateSettings({ theme: el.dataset.theme });
+    render();
+  },
+
+  'browse-recipes'() { openModal({ type: 'recipes' }); },
+
+  'new-recipe'() {
+    ui.recipeDraft = {
+      id: uid(), name: '', slot: 'dinner', mode: 'batch', minutes: 30, keeps: 3,
+      items: [], steps: [], custom: true, isNew: true,
+    };
+    openModal({ type: 'recipe-edit' });
+  },
+
+  'edit-recipe'(el) {
+    const r = store.getRecipe(el.dataset.recipe);
+    if (!r) return;
+    ui.recipeDraft = { ...r, items: r.items.map((i) => ({ ...i })), steps: [...r.steps], isNew: false };
+    openModal({ type: 'recipe-edit' });
+  },
+
+  'draft-add'() {
+    const state = store.getState();
+    captureRecipeFields();
+    ui.recipeDraft.items.push({ ingredient: state.ingredients[0].id, amount: 100 });
+    render();
+  },
+
+  'draft-remove'(el) {
+    captureRecipeFields();
+    ui.recipeDraft.items.splice(Number(el.dataset.index), 1);
+    render();
+  },
+
+  'save-recipe'() {
+    captureRecipeFields();
+    const d = ui.recipeDraft;
+    if (!d.name.trim()) { toast('Give it a name'); return; }
+    if (!d.items.length) { toast('Add at least one ingredient'); return; }
+    store.saveRecipe({
+      id: d.id, name: d.name.trim(), slot: d.slot, mode: d.mode,
+      minutes: d.minutes, keeps: d.keeps, items: d.items, steps: d.steps, custom: true,
+    });
+    closeModal();
+    toast('Recipe saved');
+  },
+
+  'delete-recipe'() {
+    if (!confirm('Delete this recipe? It will be removed from any plan using it.')) return;
+    store.deleteRecipe(ui.recipeDraft.id);
+    closeModal();
+  },
+
+  export() {
+    openModal({
+      type: 'text', mode: 'export', title: 'Export data',
+      hint: 'Copy this somewhere safe — notes app, email to yourself. It is the only backup.',
+      value: store.exportJson(),
+    });
+  },
+
+  import() {
+    openModal({
+      type: 'text', mode: 'import', title: 'Import data',
+      hint: 'Paste a backup here. It replaces everything currently in the app.',
+      value: '',
+    });
+  },
+
+  async 'copy-text'() {
+    await copyText(qs('#text-box').value);
+    toast('Copied');
+  },
+
+  'do-import'() {
+    try {
+      store.importJson(qs('#text-box').value);
+      closeModal();
+      toast('Data imported');
+    } catch (e) {
+      toast('That did not look like a backup');
+    }
+  },
+
+  reset() {
+    if (!confirm('Delete every plan, price and recipe change and start over?')) return;
+    store.resetAll();
+    ui.weekStart = startOfWeek(new Date());
+    closeModal();
+    toast('Reset');
+  },
+
+  'close-modal'() { closeModal(); },
+};
+
+// Reads the recipe form back into the draft before any re-render, so typing
+// isn't lost when a row is added or removed.
+function captureRecipeFields() {
+  const d = ui.recipeDraft;
+  if (!d) return;
+  const name = qs('#r-name');
+  if (!name) return;
+  d.name = name.value;
+  d.slot = qs('#r-slot').value;
+  d.mode = qs('#r-mode').value;
+  d.minutes = Number(qs('#r-minutes').value) || 0;
+  d.keeps = Number(qs('#r-keeps').value) || 0;
+  d.steps = qs('#r-steps').value.split('\n').map((s) => s.trim()).filter(Boolean);
+  for (const sel of document.querySelectorAll('[data-action="draft-ing"]')) {
+    d.items[Number(sel.dataset.index)].ingredient = sel.value;
+  }
+  for (const inp of document.querySelectorAll('[data-action="draft-amt"]')) {
+    d.items[Number(inp.dataset.index)].amount = Number(inp.value) || 0;
+  }
+}
+
+async function copyText(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch (e) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    ta.remove();
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Wiring
+// ---------------------------------------------------------------------------
+
+document.addEventListener('click', (event) => {
+  if (!(event.target instanceof Element)) return;
+  const el = event.target.closest('[data-action]');
+  if (!el) return;
+  // The backdrop closes the sheet, but only when the backdrop itself is what
+  // was tapped — anything inside the sheet bubbles up through it.
+  if (el.classList.contains('modal-backdrop') && event.target !== el) return;
+  const fn = actions[el.dataset.action];
+  if (!fn) return;
+  event.preventDefault();
+  fn(el);
+});
+
+// Settings inputs commit on change rather than every keystroke.
+document.addEventListener('change', (event) => {
+  const el = event.target.closest('[data-action="set-number"]');
+  if (!el) return;
+  const value = Number(el.value);
+  if (!Number.isFinite(value) || value < 0) return;
+  store.updateSettings({ [el.dataset.key]: value });
+  render();
+});
+
+function boot() {
+  store.load();
+  render();
+
+  // The single-file build has no manifest and no sw.js beside it; the installed
+  // PWA has both. Registering only when the manifest is present keeps one
+  // codebase serving both without a build-time switch.
+  if ('serviceWorker' in navigator && document.querySelector('link[rel="manifest"]')) {
+    navigator.serviceWorker.register('./sw.js').catch(() => { /* offline support is optional */ });
+  }
+}
+
+boot();
+
+return {  };
+})();
+</script>

@@ -47,10 +47,38 @@ function mergeSeeds(saved, seeds) {
   return list;
 }
 
+// Some places a page can run — iOS private browsing, a sandboxed frame — have a
+// localStorage that throws on touch. The app still has to work there, so it
+// falls back to memory and says so rather than losing prices silently.
+let persistent = true;
+let memoryStore = null;
+
+export function isPersistent() {
+  return persistent;
+}
+
+function readRaw() {
+  try {
+    return localStorage.getItem(STORAGE_KEY);
+  } catch (e) {
+    persistent = false;
+    return memoryStore;
+  }
+}
+
+function writeRaw(value) {
+  try {
+    localStorage.setItem(STORAGE_KEY, value);
+  } catch (e) {
+    persistent = false;
+    memoryStore = value;
+  }
+}
+
 export function load() {
   if (state) return state;
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = readRaw();
     const parsed = raw ? JSON.parse(raw) : null;
     state = parsed ? mergeDefaults(defaultState(), parsed) : defaultState();
     state.ingredients = mergeSeeds(state.ingredients, seedIngredients());
@@ -63,11 +91,7 @@ export function load() {
 }
 
 export function save() {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  } catch (e) {
-    console.error('meal-prep: could not save', e);
-  }
+  writeRaw(JSON.stringify(state));
 }
 
 export function getState() {
@@ -249,7 +273,12 @@ export function importJson(text) {
 }
 
 export function resetAll() {
-  localStorage.removeItem(STORAGE_KEY);
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+  } catch (e) {
+    /* memory-only mode — clearing `state` below is the whole reset */
+  }
+  memoryStore = null;
   state = null;
   return load();
 }
