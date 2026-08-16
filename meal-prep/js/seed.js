@@ -9,13 +9,15 @@
 // bananas, wraps…) where it's per item. Dry goods (rice, pasta, oats, lentils)
 // are dry weight throughout — recipes say "dry" so there's no ambiguity.
 
+// Ordered the way the aisles run, so the shopping list reads as a walk round
+// the shop rather than an alphabetical dump. Icons name sprite symbols.
 export const CATEGORIES = [
-  { key: 'meat-fish', label: 'Meat & fish', icon: '🥩' },
-  { key: 'dairy-eggs', label: 'Dairy & eggs', icon: '🥚' },
-  { key: 'fruit-veg', label: 'Fruit & veg', icon: '🥦' },
-  { key: 'frozen', label: 'Frozen', icon: '🧊' },
-  { key: 'bakery', label: 'Bakery', icon: '🍞' },
-  { key: 'cupboard', label: 'Cupboard', icon: '🥫' },
+  { key: 'fruit-veg', label: 'Fruit & veg', icon: 'carrot' },
+  { key: 'meat-fish', label: 'Meat & fish', icon: 'beef' },
+  { key: 'dairy-eggs', label: 'Dairy & eggs', icon: 'egg' },
+  { key: 'bakery', label: 'Bakery', icon: 'croissant' },
+  { key: 'frozen', label: 'Frozen', icon: 'snowflake' },
+  { key: 'cupboard', label: 'Cupboard', icon: 'soup' },
 ];
 
 // staple: true means "a bottle of oil lasts months" — these get their own

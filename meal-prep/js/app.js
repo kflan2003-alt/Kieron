@@ -8,6 +8,7 @@ import * as store from './store.js';
 import { summarise, recipeStats, proteinPerPound } from './costing.js';
 import { generatePlan } from './planner.js';
 import { CATEGORIES } from './seed.js';
+import { icon, mountSprite } from './icons.js';
 import { searchFoods } from './foods.js';
 import { canScanWithCamera, lookupBarcode, LookupError } from './barcode.js';
 import {
@@ -49,10 +50,14 @@ function render() {
 
   const root = qs('#view-root');
   const titles = {
-    week: '🥘 This week', shop: '🛒 Shopping list', cook: '👨‍🍳 Cook sessions',
-    prices: '🏷️ Prices', more: '⚙️ Settings',
+    week: ['calendar-days', 'This week'],
+    shop: ['shopping-basket', 'Shopping list'],
+    cook: ['chef-hat', 'Cook sessions'],
+    prices: ['tag', 'Prices'],
+    more: ['sliders-horizontal', 'Settings'],
   };
-  qs('#topbar-title').textContent = titles[ui.tab] || 'Meal Prep';
+  const [titleIcon, titleText] = titles[ui.tab] || ['calendar-days', 'Meal Prep'];
+  qs('#topbar-title').innerHTML = `${icon(titleIcon)}<span>${titleText}</span>`;
 
   if (ui.tab === 'week') root.innerHTML = renderWeek(ctx);
   else if (ui.tab === 'shop') root.innerHTML = renderShop(ctx);
@@ -164,8 +169,8 @@ function editPriceModal(ctx) {
     <div class="modal-title">${escapeHtml(ing.name)}</div>
 
     <div class="btn-row">
-      <button class="btn small" data-action="open-food-search">🔍 Fill from food list</button>
-      <button class="btn small" data-action="open-barcode">📷 Scan barcode</button>
+      <button class="btn small" data-action="open-food-search">${icon('search')} Food list</button>
+      <button class="btn small" data-action="open-barcode">${icon('camera')} Scan barcode</button>
     </div>
     <div class="field-hint" style="margin:-6px 0 14px">
       Either one fills in the name, pack size and nutrition. Neither can fill in
@@ -243,7 +248,7 @@ function recipeListModal(ctx) {
               <div class="option-name">${escapeHtml(r.name)}</div>
               <div class="option-sub">${Math.round(stats.protein)}g protein · ${money(stats.cost)} · ${r.minutes} min</div>
             </div>
-            <div class="shop-cost">›</div>
+            ${icon('chevron-right', 'ico-sm')}
           </button>`;
       }).join('')}
     `;
@@ -253,7 +258,7 @@ function recipeListModal(ctx) {
     <div class="modal-title">Recipes</div>
     ${bySlot}
     <div class="btn-row" style="margin-top:12px">
-      <button class="btn primary" data-action="new-recipe">+ New</button>
+      <button class="btn primary" data-action="new-recipe">${icon('plus')} New</button>
       <button class="btn" data-action="close-modal">Close</button>
     </div>
   `;
@@ -313,7 +318,7 @@ function recipeEditModal(ctx) {
         </div>
       </div>
     `).join('')}
-    <button class="btn small" data-action="draft-add">+ Ingredient</button>
+    <button class="btn small" data-action="draft-add">${icon('plus')} Ingredient</button>
     <div class="field-hint" style="margin-top:6px">
       Amounts are grams, ml or count, per single portion — dry weight for rice,
       pasta and oats.
@@ -885,6 +890,7 @@ document.addEventListener('change', (event) => {
 
 function boot() {
   store.load();
+  mountSprite();
   render();
 
   // The single-file build has no manifest and no sw.js beside it; the installed

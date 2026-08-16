@@ -59,6 +59,30 @@ The app ships with typical UK supermarket estimates so it works on day one.
 Anything you haven't corrected yourself is tagged **est** — on the Prices tab,
 in the shopping list, and in a running count on the Week tab.
 
+## The look
+
+The design follows one idea: a **shelf-edge price ticket**. That's the
+typography this app's reader looks at all day at work, and it's the right form
+for the content — every screen resolves to a number you hand over at a till.
+
+- **Type** is Archivo Variable, one 78KB file carrying both a weight axis
+  (100–900) and a width axis (62–125). The width axis does real work: prices set
+  condensed and heavy like a ticket, micro-labels set expanded and letter-spaced
+  like the unit-price line under it. Subset to the characters the app actually
+  sets, and served from `fonts/` rather than a CDN — the artifact's content
+  policy blocks external hosts, so a linked webfont would silently fall back to
+  the system stack.
+- **Money** gets ticket typography wherever the price is the point: small raised
+  £, large pounds, small pence, tabular figures so columns line up.
+- **Icons** are Lucide (ISC), compiled into one inline SVG sprite. Strokes
+  inherit `currentColor`, so an icon is simply the colour and size of the text
+  beside it. There is no emoji anywhere in the interface — emoji can't take the
+  theme's colour and render differently on every phone.
+- **Colour** is a deep grocer's green with neutrals carrying a slight green cast
+  rather than being flat grey. Amber and red are reserved for meaning — a price
+  that's still a guess, a budget that's blown — and are never used decoratively.
+  Every text/background pair is contrast-checked in both themes.
+
 ## Why it can't fetch prices from the web
 
 Worth stating plainly, because it's the obvious thing to want:
@@ -185,6 +209,17 @@ A ~30-line bundler rather than a dependency: each module under `js/` becomes a
 namespace object and the imports are rewritten to destructure from it, so named
 imports and `import * as store` both keep working with no changes to the source.
 `dist/` is committed so the published page and the repo can't drift apart.
+
+## Regenerating the design assets
+
+```
+npm pack lucide-static @fontsource-variable/archivo    # into a temp dir, unpack
+node tools/build-assets.mjs <that-dir>
+```
+
+Rewrites `js/icons.js` (the sprite) and `fonts/archivo-subset.woff2`. Both are
+committed; this only needs running when the icon set or character coverage
+changes. Needs `pyftsubset` (`pip install fonttools brotli`).
 
 ## Tests
 

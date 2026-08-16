@@ -88,7 +88,6 @@ return { ${exports.join(', ')} };
 })();`;
 }
 
-const css = readFileSync(join(root, 'css', 'styles.css'), 'utf8');
 const script = MODULES.map(bundleModule).join('\n\n');
 
 // Belt and braces: every namespace referenced must also be defined, so a bundle
@@ -98,52 +97,44 @@ for (const [, ref] of script.matchAll(/\b(__[a-z][\w-]*)\b/gi)) {
   if (!defined.has(ref)) throw new Error(`bundle references ${ref}, which no module defines`);
 }
 
-// The page body only — the host wraps it in <!doctype html><head></head><body>.
-// The charset declaration matters: this file is full of £, · and emoji, and a
-// host that serves it without one renders them as mojibake.
-const html = `<meta charset="utf-8" />
-<title>Meal Prep</title>
-<meta name="description" content="Weekly meal plan, shopping list and exact cost — cheap, high protein, two cook sessions a week." />
-<meta name="theme-color" content="#16794a" />
+// The font goes in as a data URI. A linked webfont would silently fall back to
+// the system stack: the artifact's content policy blocks every external host,
+// and there's no separate file to link to in a single-file build anyway.
+const fontData = readFileSync(join(root, 'fonts', 'archivo-subset.woff2')).toString('base64');
+const fontsCss = readFileSync(join(root, 'css', 'fonts.css'), 'utf8')
+  .replace(/url\([^)]*\)/, `url('data:font/woff2;base64,${fontData}')`);
+const css = readFileSync(join(root, 'css', 'styles.css'), 'utf8');
 
-<style>
-${css}</style>
+// Derived from index.html rather than a second copy of the markup — the two
+// builds drifting apart is exactly the bug this avoids.
+function inline(html, pattern, replacement, what) {
+  if (!pattern.test(html)) throw new Error(`index.html has no ${what} to replace`);
+  return html.replace(pattern, () => replacement);
+}
 
-<div id="app">
-  <header class="topbar">
-    <span id="topbar-title">🥘 This week</span>
-  </header>
+let html = readFileSync(join(root, 'index.html'), 'utf8');
 
-  <main id="view-root" class="view-root"></main>
+// Keep the head's metas (charset, title, description, theme-color); drop the
+// document skeleton, which the host supplies.
+html = html
+  .replace(/^[\s\S]*?<head>\s*/, '')
+  .replace(/<\/head>[\s\S]*?<body>\s*/, '')
+  .replace(/\s*<\/body>[\s\S]*$/, '\n');
 
-  <nav class="tabbar">
-    <button class="tab-btn active" data-action="switch-tab" data-tab="week">
-      <span class="tab-icon">🗓️</span><span class="tab-label">Week</span>
-    </button>
-    <button class="tab-btn" data-action="switch-tab" data-tab="shop">
-      <span class="tab-icon">🛒</span><span class="tab-label">Shop</span>
-    </button>
-    <button class="tab-btn" data-action="switch-tab" data-tab="cook">
-      <span class="tab-icon">👨‍🍳</span><span class="tab-label">Cook</span>
-    </button>
-    <button class="tab-btn" data-action="switch-tab" data-tab="prices">
-      <span class="tab-icon">🏷️</span><span class="tab-label">Prices</span>
-    </button>
-    <button class="tab-btn" data-action="switch-tab" data-tab="more">
-      <span class="tab-icon">⚙️</span><span class="tab-label">More</span>
-    </button>
-  </nav>
+// No manifest, no icon files, no service worker beside a single file.
+html = html
+  .replace(/[ \t]*<link rel="manifest"[^>]*>\n?/g, '')
+  .replace(/[ \t]*<link rel="icon"[^>]*>\n?/g, '')
+  .replace(/[ \t]*<link rel="apple-touch-icon"[^>]*>\n?/g, '');
 
-  <div id="modal-root"></div>
-  <div id="toast-root" class="toast-root"></div>
-</div>
-
-<script type="module">
-${script}
-</script>
-`;
+html = inline(html, /<link rel="stylesheet" href="css\/fonts\.css"[^>]*>/,
+  `<style>\n${fontsCss}</style>`, 'fonts.css link');
+html = inline(html, /<link rel="stylesheet" href="css\/styles\.css"[^>]*>/,
+  `<style>\n${css}</style>`, 'styles.css link');
+html = inline(html, /<script type="module" src="js\/app\.js"><\/script>/,
+  `<script type="module">\n${script}\n</script>`, 'app.js script tag');
 
 const out = resolve(process.argv[2] || join(root, 'dist', 'meal-prep.html'));
 mkdirSync(dirname(out), { recursive: true });
 writeFileSync(out, html);
-console.log(`wrote ${out} (${Math.round(html.length / 1024)} KB)`);
+console.log(`wrote ${out} (${Math.round(html.length / 1024)} KB, ${MODULES.length} modules, font inlined)`);

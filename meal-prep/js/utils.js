@@ -15,8 +15,11 @@ export const SLOT_LABELS = {
   breakfast: 'Breakfast', lunch: 'Lunch', dinner: 'Dinner',
   snack: 'Snack', snack2: 'Second snack',
 };
+// Icon names from the sprite in js/icons.js, not emoji: emoji can't take the
+// theme's colour and render differently on every phone.
 export const SLOT_ICONS = {
-  breakfast: '🌅', lunch: '🥗', dinner: '🍽️', snack: '🍌', snack2: '🥜',
+  breakfast: 'sunrise', lunch: 'sandwich', dinner: 'utensils-crossed',
+  snack: 'apple', snack2: 'cookie',
 };
 
 // Both snack slots eat from the same pool of snack recipes.
@@ -69,6 +72,16 @@ export function formatWeekRange(weekStart) {
 export function money(n) {
   const v = Number.isFinite(n) ? n : 0;
   return `£${v.toFixed(2)}`;
+}
+
+// The same number set the way a shelf-edge ticket sets it: small raised sign,
+// big pounds, small pence. Used wherever a price is the point rather than an
+// aside — the headline total, the running total, the money you're deciding on.
+export function moneyTicket(n, cls = '') {
+  const v = Number.isFinite(n) ? n : 0;
+  const [pounds, pence] = Math.abs(v).toFixed(2).split('.');
+  const sign = v < 0 ? '-' : '';
+  return `<span class="ticket ${cls}"><span class="cur">£</span>${sign}${pounds}<span class="pence">.${pence}</span></span>`;
 }
 
 // Quantities read better without trailing noise: 87.5g -> "88g", 0.5 -> "½".
