@@ -1,0 +1,16 @@
+/* Archivo Variable, subset to the characters this app sets and served from the
+   repo. Not a CDN link: the artifact's content policy blocks every external
+   host, so a linked webfont would silently fall back to the system stack.
+
+   One file carries both axes — weight 100-900 and width 62-125 — which is what
+   lets the same family set condensed price numerals and expanded micro-labels.
+   Regenerate with tools/build-assets.mjs. */
+
+@font-face {
+  font-family: Archivo;
+  src: url('../fonts/archivo-subset.woff2') format('woff2-variations');
+  font-weight: 100 900;
+  font-stretch: 62% 125%;
+  font-style: normal;
+  font-display: swap;
+}
