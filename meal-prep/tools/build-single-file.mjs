@@ -17,8 +17,40 @@ import { fileURLToPath } from 'node:url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = join(__dirname, '..');
 
-// Dependency order — every module only imports from ones above it.
-const MODULES = ['utils', 'seed', 'costing', 'planner', 'store', 'views', 'app'];
+// Modules are discovered by walking imports out from the entry point and
+// emitted in dependency order. Deriving it beats hand-maintaining a list: a new
+// module used to be silently left out, producing a bundle that threw on load.
+const ENTRY = 'app';
+
+function readModule(name) {
+  return readFileSync(join(root, 'js', `${name}.js`), 'utf8');
+}
+
+function importsOf(source) {
+  return [...source.matchAll(/^import\s+(?:[\s\S]*?)\s+from\s+['"]\.\/([\w-]+)\.js['"]/gm)]
+    .map((m) => m[1]);
+}
+
+function moduleOrder(entry) {
+  const order = [];
+  const seen = new Set();
+  const visiting = new Set();
+
+  const visit = (name) => {
+    if (seen.has(name)) return;
+    if (visiting.has(name)) throw new Error(`circular import via ${name}.js`);
+    visiting.add(name);
+    for (const dep of importsOf(readModule(name))) visit(dep);
+    visiting.delete(name);
+    seen.add(name);
+    order.push(name); // post-order: dependencies land before their dependents
+  };
+
+  visit(entry);
+  return order;
+}
+
+const MODULES = moduleOrder(ENTRY);
 
 const NS = (name) => `__${name}`;
 
@@ -27,6 +59,7 @@ function exportedNames(source) {
   const patterns = [
     /^export\s+(?:async\s+)?function\s+([A-Za-z_$][\w$]*)/gm,
     /^export\s+(?:const|let|var)\s+([A-Za-z_$][\w$]*)/gm,
+    /^export\s+class\s+([A-Za-z_$][\w$]*)/gm,
   ];
   for (const re of patterns) {
     for (const m of source.matchAll(re)) names.add(m[1]);
@@ -45,7 +78,7 @@ function rewriteImports(source) {
 }
 
 function bundleModule(name) {
-  const source = readFileSync(join(root, 'js', `${name}.js`), 'utf8');
+  const source = readModule(name);
   const exports = exportedNames(source);
   const body = rewriteImports(source).replace(/^export\s+/gm, '');
   return `// ---------- js/${name}.js ----------
@@ -57,6 +90,13 @@ return { ${exports.join(', ')} };
 
 const css = readFileSync(join(root, 'css', 'styles.css'), 'utf8');
 const script = MODULES.map(bundleModule).join('\n\n');
+
+// Belt and braces: every namespace referenced must also be defined, so a bundle
+// that would throw on load fails the build instead.
+const defined = new Set(MODULES.map(NS));
+for (const [, ref] of script.matchAll(/\b(__[a-z][\w-]*)\b/gi)) {
+  if (!defined.has(ref)) throw new Error(`bundle references ${ref}, which no module defines`);
+}
 
 // The page body only — the host wraps it in <!doctype html><head></head><body>.
 // The charset declaration matters: this file is full of £, · and emoji, and a

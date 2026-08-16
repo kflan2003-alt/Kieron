@@ -59,6 +59,40 @@ The app ships with typical UK supermarket estimates so it works on day one.
 Anything you haven't corrected yourself is tagged **est** — on the Prices tab,
 in the shopping list, and in a running count on the Week tab.
 
+## Why it can't fetch prices from the web
+
+Worth stating plainly, because it's the obvious thing to want:
+
+- **No UK supermarket publishes a price API.** Tesco retired theirs years ago and
+  nobody replaced it. There is no legitimate source to call.
+- **A web page can't read a supermarket's site anyway.** Browsers block reading a
+  response from another site unless that site opts in, and they don't. That's the
+  browser's security model, not something code can work around.
+- **Scraping means a server**, which breaks their terms, gets blocked by bot
+  protection, and costs money to keep running.
+
+So the price is typed, always. What the lookups save you is the *rest* of the
+form — name, pack size, protein, calories — which is the tedious part anyway.
+
+Two lookups, because they fail in different places:
+
+**Fill from food list** (`js/foods.js`) is a table of common UK foods compiled
+into the app. No network, so it works everywhere including inside Claude, where
+outside requests are blocked outright.
+
+**Scan barcode** (`js/barcode.js`) queries Open Food Facts — free, open, no key,
+no prices. It needs a connection and only works in the installed version. Camera
+scanning uses the browser's own barcode reader, which Chrome and Android have and
+Safari doesn't; on Safari you type the digits instead, same lookup.
+
+A caveat kept deliberately visible: the Open Food Facts parser was written on a
+machine that couldn't reach the API, so it's built defensively — several possible
+key names per field, types checked, anything unreadable left blank for you rather
+than guessed. It's covered by fixture tests, not by a live call. If the real
+responses differ, it should say "couldn't read that" rather than write nonsense
+into your price list — but that's the one part of the app that hasn't met the
+real thing.
+
 ## The five tabs
 
 **Week** — the plan. Tap **Build this week's plan** and it picks meals, then
@@ -77,7 +111,10 @@ up to the number of portions the week needs, plus the method. If a batch is
 being eaten past its fridge life it tells you which portions to freeze.
 
 **Prices** — the price list. Tap any item to enter what it really costs. Filter
-by *this week's shop* to see only what's on the list in front of you.
+by *this week's shop* to see only what's on the list in front of you. Two
+shortcuts fill in everything except the price: **Fill from food list** searches a
+few hundred common UK foods built into the app, and **Scan barcode** looks the
+product up in Open Food Facts.
 
 **More** — targets (protein, budget, portions), which days you cook, which meals
 to plan, the recipe editor, and export/import.
@@ -127,12 +164,16 @@ session. Export before closing the tab or the prices go with it.
 
 ## Notes
 
-- Nutrition figures are typical values for the food, not label-exact. Protein
-  and calories are approximations good enough to compare meals and plan a week.
+- Nutrition figures, including everything in the built-in food list, are typical
+  values for the food rather than any one brand's label. Good enough to compare
+  meals and plan a week; check the packet if you need it exact.
+- Pack sizes offered by the food list are the common shelf size, a starting
+  point to correct — they vary by shop.
 - Dry goods are dry weight throughout — 90g of rice means 90g uncooked.
 - Recipes are editable and you can add your own; anything you already cook works
   as long as you list the ingredients and rough per-portion amounts.
-- Nothing in the app makes a network call. There is nothing to sign into.
+- The only network call the app can make is a barcode lookup you explicitly ask
+  for. Nothing else leaves the phone, and there is nothing to sign into.
 
 ## Building the single-file version
 
@@ -144,6 +185,17 @@ A ~30-line bundler rather than a dependency: each module under `js/` becomes a
 namespace object and the imports are rewritten to destructure from it, so named
 imports and `import * as store` both keep working with no changes to the source.
 `dist/` is committed so the published page and the repo can't drift apart.
+
+## Tests
+
+```
+node tools/barcode-test.mjs
+```
+
+38 fixture tests over the Open Food Facts parser: quantity strings (`1kg`,
+`4 x 125g`, `75cl`), kJ-to-kcal conversion, missing nutrition, junk input, and
+every failure path of the lookup with a stubbed transport. Including one that
+asserts a lookup can never return a price.
 
 ## Regenerating the icons
 
